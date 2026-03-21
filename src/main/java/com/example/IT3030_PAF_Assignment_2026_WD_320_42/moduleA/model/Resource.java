@@ -1,4 +1,4 @@
-package main.java.com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.model;
+package com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
