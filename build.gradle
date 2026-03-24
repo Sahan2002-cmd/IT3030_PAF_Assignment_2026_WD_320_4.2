@@ -21,9 +21,9 @@ dependencies {
     // Web
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    // Database - JPA + SQL Server
+    // Database - JPA + H2
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-
+    implementation 'com.h2database:h2:2.2.224'
 
     // Security + OAuth2
     implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -46,4 +46,7 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+bootRun {
+    jvmArgs = ['-Xms64m', '-Xmx192m']
 }
