@@ -23,7 +23,7 @@ dependencies {
 
     // Database - JPA + SQL Server
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc:12.4.2.jre11'
+
 
     // Security + OAuth2
     implementation 'org.springframework.boot:spring-boot-starter-security'
