@@ -48,5 +48,8 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 bootRun {
-    jvmArgs = ['-Xms64m', '-Xmx192m']
+    jvmArgs = ['-Xms32m', '-Xmx128m', '-XX:MaxMetaspaceSize=96m', '-XX:+UseSerialGC']
+}
+tasks.withType(JavaCompile).configureEach {
+    options.fork = false
 }
