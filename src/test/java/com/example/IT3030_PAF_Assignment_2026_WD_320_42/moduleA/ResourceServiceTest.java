@@ -1,24 +1,30 @@
-package com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.test;
+package com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.dto.ResourceDTO;
 import com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.model.Resource;
 import com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.model.ResourceStatus;
 import com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.repository.ResourceRepository;
+import com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.service.ResourceService;
+
 import jakarta.persistence.EntityNotFoundException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
+@SuppressWarnings("null")
 @ExtendWith(MockitoExtension.class)
 class ResourceServiceTest {
 
@@ -31,6 +37,7 @@ class ResourceServiceTest {
     private Resource sampleResource;
 
     @BeforeEach
+    @SuppressWarnings("unused")
     void setUp() {
         sampleResource = new Resource();
         sampleResource.setId(1L);
@@ -41,8 +48,6 @@ class ResourceServiceTest {
         sampleResource.setAvailabilityWindows("08:00-18:00");
         sampleResource.setStatus(ResourceStatus.ACTIVE);
     }
-
-    // ── CREATE ────────────────────────────────────────────────────────────────────
 
     @Test
     void createResource_shouldReturnResponse_whenValidRequest() {
@@ -58,8 +63,6 @@ class ResourceServiceTest {
         verify(resourceRepository, times(1)).save(any(Resource.class));
     }
 
-    // ── READ ALL ──────────────────────────────────────────────────────────────────
-
     @Test
     void getAllResources_shouldReturnListOfResponses() {
         when(resourceRepository.findAll()).thenReturn(List.of(sampleResource));
@@ -69,8 +72,6 @@ class ResourceServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("Lab A101");
     }
-
-    // ── READ ONE ──────────────────────────────────────────────────────────────────
 
     @Test
     void getResourceById_shouldReturnResponse_whenExists() {
@@ -90,8 +91,6 @@ class ResourceServiceTest {
                 .hasMessageContaining("99");
     }
 
-    // ── UPDATE ────────────────────────────────────────────────────────────────────
-
     @Test
     void updateResource_shouldApplyChanges() {
         ResourceDTO.UpdateRequest req = new ResourceDTO.UpdateRequest(
@@ -105,8 +104,6 @@ class ResourceServiceTest {
         verify(resourceRepository).save(argThat(r -> r.getName().equals("Updated Lab")));
     }
 
-    // ── PATCH STATUS ──────────────────────────────────────────────────────────────
-
     @Test
     void updateStatus_shouldChangeStatus() {
         when(resourceRepository.findById(1L)).thenReturn(Optional.of(sampleResource));
@@ -116,8 +113,6 @@ class ResourceServiceTest {
 
         assertThat(response.getStatus()).isEqualTo(ResourceStatus.OUT_OF_SERVICE);
     }
-
-    // ── DELETE ────────────────────────────────────────────────────────────────────
 
     @Test
     void deleteResource_shouldCallDelete_whenExists() {
@@ -135,8 +130,6 @@ class ResourceServiceTest {
         assertThatThrownBy(() -> resourceService.deleteResource(99L))
                 .isInstanceOf(EntityNotFoundException.class);
     }
-
-    // ── SEARCH ────────────────────────────────────────────────────────────────────
 
     @Test
     void searchResources_byType_shouldReturnFiltered() {
