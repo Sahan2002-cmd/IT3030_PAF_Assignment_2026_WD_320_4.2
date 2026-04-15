@@ -1,9 +1,10 @@
-package com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.test;
+package com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA;
 
 import com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.dto.ResourceDTO;
 import com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.model.Resource;
 import com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.model.ResourceStatus;
 import com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.repository.ResourceRepository;
+import com.example.IT3030_PAF_Assignment_2026_WD_320_42.moduleA.service.ResourceService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

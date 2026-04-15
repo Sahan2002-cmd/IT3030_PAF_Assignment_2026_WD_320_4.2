@@ -30,6 +30,10 @@ import java.util.List;
 public class ResourceController {
     
         private final ResourceService resourceService;
+//Manual constructor for testing without Lombok
+            public ResourceController(ResourceService resourceService) {
+        this.resourceService = resourceService;
+    }
  
     // ── POST /api/resources ───────────────────────────────────────────────────────
     // Creates a new bookable resource.  Returns 201 Created.
