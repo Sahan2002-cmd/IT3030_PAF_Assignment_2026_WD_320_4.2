@@ -36,7 +36,7 @@ export default function LoginPage() {
     setErrors({}); setApiError(''); setLoading(true);
     try {
       await login(form.email, form.password);
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       setApiError(err.response?.data?.message || 'Invalid email or password');
     } finally {
@@ -122,7 +122,7 @@ export default function LoginPage() {
             <button
               className="login-oauth-btn"
               onClick={() => {
-                window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/oauth2/authorization/google`;
+                window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/oauth2/authorization/google`;
               }}
               type="button"
             >

@@ -1,22 +1,19 @@
-// src/services/ApiService.js
 import axios from 'axios';
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: true,   // needed for Spring Security session cookie / OAuth2
+  withCredentials: true,
 });
 
-// ── Attach JWT if stored ─────────────────────────────────────────────────────
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('sc_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// ── Global error normaliser ──────────────────────────────────────────────────
 api.interceptors.response.use(
   (res) => res,
   (err) => {
