@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { isValidMobileNumber, isValidPassword, MOBILE_NUMBER_RULE_TEXT, PASSWORD_RULE_TEXT } from "../../utils/validation";
 
 const inputClasses =
   "w-full rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-3 text-base text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10";
@@ -7,6 +8,10 @@ function ProfileModal({ isOpen, user, onClose, onSave }) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    mobileNumber: "",
+    currentPassword: "",
+    newPassword: "",
+    confirmNewPassword: "",
   });
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -19,6 +24,10 @@ function ProfileModal({ isOpen, user, onClose, onSave }) {
     setFormData({
       name: user.name || "",
       email: user.email || "",
+      mobileNumber: user.mobileNumber || "",
+      currentPassword: "",
+      newPassword: "",
+      confirmNewPassword: "",
     });
     setError("");
   }, [isOpen, user]);
@@ -38,13 +47,49 @@ function ProfileModal({ isOpen, user, onClose, onSave }) {
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
+
+    const trimmedMobileNumber = formData.mobileNumber.trim();
+    const wantsPasswordChange =
+      Boolean(formData.currentPassword) || Boolean(formData.newPassword) || Boolean(formData.confirmNewPassword);
+
+    if (!isValidMobileNumber(trimmedMobileNumber)) {
+      setError(MOBILE_NUMBER_RULE_TEXT);
+      return;
+    }
+
+    if (wantsPasswordChange) {
+      if (!formData.currentPassword) {
+        setError("Current password is required.");
+        return;
+      }
+
+      if (!isValidPassword(formData.newPassword)) {
+        setError(PASSWORD_RULE_TEXT);
+        return;
+      }
+
+      if (formData.newPassword !== formData.confirmNewPassword) {
+        setError("New passwords do not match.");
+        return;
+      }
+    }
+
     setIsSaving(true);
 
     try {
-      await onSave({
+      const payload = {
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
-      });
+        mobileNumber: trimmedMobileNumber,
+      };
+
+      if (wantsPasswordChange) {
+        payload.currentPassword = formData.currentPassword;
+        payload.newPassword = formData.newPassword;
+        payload.confirmNewPassword = formData.confirmNewPassword;
+      }
+
+      await onSave(payload);
       onClose();
     } catch (saveError) {
       setError(saveError.message || "Failed to update profile.");
@@ -93,6 +138,75 @@ function ProfileModal({ isOpen, user, onClose, onSave }) {
               required
             />
           </label>
+
+          <label className="grid gap-2">
+            <span className="text-sm font-semibold text-primary">Mobile number</span>
+            <input
+              type="tel"
+              name="mobileNumber"
+              value={formData.mobileNumber}
+              onChange={handleChange}
+              className={inputClasses}
+              inputMode="numeric"
+              pattern="\d{10}"
+              maxLength="10"
+              placeholder="Enter 10-digit mobile number"
+              required
+            />
+            <span className="text-xs text-slate-500">{MOBILE_NUMBER_RULE_TEXT}</span>
+          </label>
+
+          <div className="rounded-[28px] border border-slate-200 bg-slate-50/70 p-5">
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Change password</p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Leave these fields empty if you want to keep your current password.
+            </p>
+
+            <div className="mt-4 grid gap-5">
+              <label className="grid gap-2">
+                <span className="text-sm font-semibold text-primary">Current password</span>
+                <input
+                  type="password"
+                  name="currentPassword"
+                  value={formData.currentPassword}
+                  onChange={handleChange}
+                  className={inputClasses}
+                  placeholder="Enter current password"
+                />
+              </label>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="grid gap-2">
+                  <span className="text-sm font-semibold text-primary">New password</span>
+                  <input
+                    type="password"
+                    name="newPassword"
+                    value={formData.newPassword}
+                    onChange={handleChange}
+                    className={inputClasses}
+                    minLength="6"
+                    pattern="(?=.*[a-z])(?=.*[A-Z]).{6,}"
+                    placeholder="Enter new password"
+                  />
+                  <span className="text-xs text-slate-500">{PASSWORD_RULE_TEXT}</span>
+                </label>
+
+                <label className="grid gap-2">
+                  <span className="text-sm font-semibold text-primary">Confirm new password</span>
+                  <input
+                    type="password"
+                    name="confirmNewPassword"
+                    value={formData.confirmNewPassword}
+                    onChange={handleChange}
+                    className={inputClasses}
+                    minLength="6"
+                    pattern="(?=.*[a-z])(?=.*[A-Z]).{6,}"
+                    placeholder="Confirm new password"
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
 
           {error ? (
             <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>

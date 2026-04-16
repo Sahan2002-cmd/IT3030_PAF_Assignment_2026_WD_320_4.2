@@ -30,6 +30,9 @@ public class AppUser implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(length = 10)
+    private String mobileNumber;
+
     @Column(nullable = false)
     private String password;
 
@@ -47,8 +50,13 @@ public class AppUser implements UserDetails {
     }
 
     public AppUser(String name, String email, String password, Role role, boolean approved) {
+        this(name, email, password, role, approved, null);
+    }
+
+    public AppUser(String name, String email, String password, Role role, boolean approved, String mobileNumber) {
         this.name = name;
         this.email = email;
+        this.mobileNumber = mobileNumber;
         this.password = password;
         this.role = role;
         this.approved = approved;
@@ -79,6 +87,14 @@ public class AppUser implements UserDetails {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getMobileNumber() {
+        return mobileNumber;
+    }
+
+    public void setMobileNumber(String mobileNumber) {
+        this.mobileNumber = mobileNumber;
     }
 
     @Override

@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { signupUser } from "../../services/api";
+import { isValidMobileNumber, isValidPassword, MOBILE_NUMBER_RULE_TEXT, PASSWORD_RULE_TEXT } from "../../utils/validation";
 
 const initialForm = {
   name: "",
   email: "",
+  mobileNumber: "",
   password: "",
   confirmPassword: "",
   role: "STUDENT",
@@ -47,6 +49,18 @@ function Register() {
     setError("");
     setSuccessMessage("");
 
+    const trimmedMobileNumber = formData.mobileNumber.trim();
+
+    if (!isValidMobileNumber(trimmedMobileNumber)) {
+      setError(MOBILE_NUMBER_RULE_TEXT);
+      return;
+    }
+
+    if (!isValidPassword(formData.password)) {
+      setError(PASSWORD_RULE_TEXT);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -58,6 +72,7 @@ function Register() {
       const response = await signupUser({
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
+        mobileNumber: trimmedMobileNumber,
         password: formData.password,
         role: formData.role,
       });
@@ -175,6 +190,23 @@ function Register() {
               />
             </label>
 
+            <label className="grid gap-2">
+              <span className="text-sm font-semibold text-primary">Mobile number</span>
+              <input
+                type="tel"
+                name="mobileNumber"
+                value={formData.mobileNumber}
+                onChange={handleChange}
+                placeholder="Enter 10-digit mobile number"
+                inputMode="numeric"
+                pattern="\d{10}"
+                maxLength="10"
+                className={inputClasses}
+                required
+              />
+              <span className="text-xs text-slate-500">{MOBILE_NUMBER_RULE_TEXT}</span>
+            </label>
+
             <div className="grid gap-5 sm:grid-cols-2">
               <label className="grid gap-2">
                 <span className="text-sm font-semibold text-primary">Password</span>
@@ -185,9 +217,11 @@ function Register() {
                   onChange={handleChange}
                   placeholder="Enter password"
                   minLength="6"
+                  pattern="(?=.*[a-z])(?=.*[A-Z]).{6,}"
                   className={inputClasses}
                   required
                 />
+                <span className="text-xs text-slate-500">{PASSWORD_RULE_TEXT}</span>
               </label>
 
               <label className="grid gap-2">
@@ -199,6 +233,7 @@ function Register() {
                   onChange={handleChange}
                   placeholder="Confirm password"
                   minLength="6"
+                  pattern="(?=.*[a-z])(?=.*[A-Z]).{6,}"
                   className={inputClasses}
                   required
                 />

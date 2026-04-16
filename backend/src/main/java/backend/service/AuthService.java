@@ -22,7 +22,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
+import static backend.validation.AuthValidationRules.PASSWORD_MESSAGE;
 
 @Service
 public class AuthService {
@@ -70,7 +72,8 @@ public class AuthService {
                 request.email().trim().toLowerCase(),
                 passwordEncoder.encode(request.password()),
                 role,
-                approved
+                approved,
+                request.mobileNumber().trim()
         );
         AppUser savedUser = appUserRepository.save(user);
 
@@ -82,6 +85,7 @@ public class AuthService {
                 savedUser.getId(),
                 savedUser.getName(),
                 savedUser.getEmail(),
+                savedUser.getMobileNumber(),
                 savedUser.getRole().name(),
                 savedUser.isApproved(),
                 null,
@@ -181,6 +185,7 @@ public class AuthService {
 
         String nextEmail = request.email().trim().toLowerCase();
         String nextName = request.name().trim();
+        String nextMobileNumber = request.mobileNumber().trim();
 
         if (!user.getEmail().equalsIgnoreCase(nextEmail) && appUserRepository.existsByEmailIgnoreCase(nextEmail)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
@@ -188,6 +193,8 @@ public class AuthService {
 
         user.setName(nextName);
         user.setEmail(nextEmail);
+        user.setMobileNumber(nextMobileNumber);
+        updatePasswordIfRequested(user, request);
 
         return buildAuthResponse(
                 user,
@@ -229,6 +236,7 @@ public class AuthService {
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
+                user.getMobileNumber(),
                 user.getRole().name(),
                 user.isApproved(),
                 user.getCreatedAt()
@@ -240,10 +248,48 @@ public class AuthService {
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
+                user.getMobileNumber(),
                 user.getRole().name(),
                 user.isApproved(),
                 token,
                 message
         );
+    }
+
+    private void updatePasswordIfRequested(AppUser user, ProfileUpdateRequest request) {
+        boolean wantsPasswordChange =
+                StringUtils.hasText(request.currentPassword())
+                        || StringUtils.hasText(request.newPassword())
+                        || StringUtils.hasText(request.confirmNewPassword());
+
+        if (!wantsPasswordChange) {
+            return;
+        }
+
+        if (!StringUtils.hasText(request.currentPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is required");
+        }
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is incorrect");
+        }
+
+        if (!StringUtils.hasText(request.newPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New password is required");
+        }
+
+        if (!StringUtils.hasText(request.confirmNewPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please confirm your new password");
+        }
+
+        if (!request.newPassword().equals(request.confirmNewPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New passwords do not match");
+        }
+
+        if (!backend.validation.AuthValidationRules.isValidPassword(request.newPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, PASSWORD_MESSAGE);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
     }
 }

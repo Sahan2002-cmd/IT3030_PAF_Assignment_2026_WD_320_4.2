@@ -37,6 +37,7 @@ class AuthIntegrationTests {
                 "Student User",
                 "student1@campushub.com",
                 "Student@123",
+                "0712345678",
                 "student"
         );
 
@@ -62,6 +63,7 @@ class AuthIntegrationTests {
                 "Tech User",
                 "tech1@campushub.com",
                 "Tech@123",
+                "0771234567",
                 "technician"
         );
 
@@ -114,6 +116,7 @@ class AuthIntegrationTests {
                 "Profile User",
                 "profile1@campushub.com",
                 "Profile@123",
+                "0761234567",
                 "student"
         );
 
@@ -138,19 +141,56 @@ class AuthIntegrationTests {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new ProfileUpdateRequest("Updated User", "profile-updated@campushub.com")
+                                new ProfileUpdateRequest(
+                                        "Updated User",
+                                        "profile-updated@campushub.com",
+                                        "0751234567",
+                                        "Profile@123",
+                                        "Updated@123",
+                                        "Updated@123"
+                                )
                         )))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Updated User"))
                 .andExpect(jsonPath("$.email").value("profile-updated@campushub.com"))
+                .andExpect(jsonPath("$.mobileNumber").value("0751234567"))
                 .andExpect(jsonPath("$.token").isNotEmpty());
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new LoginRequest("profile-updated@campushub.com", "Profile@123")
+                                new LoginRequest("profile-updated@campushub.com", "Updated@123")
                         )))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void signupRequiresValidMobileNumberAndPasswordComplexity() throws Exception {
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new SignupRequest(
+                                        "Invalid Mobile",
+                                        "invalid-mobile@campushub.com",
+                                        "ValidPass@1",
+                                        "12345",
+                                        "student"
+                                )
+                        )))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new SignupRequest(
+                                        "Invalid Password",
+                                        "invalid-password@campushub.com",
+                                        "lowercase",
+                                        "0781234567",
+                                        "student"
+                                )
+                        )))
+                .andExpect(status().isBadRequest());
     }
 }
