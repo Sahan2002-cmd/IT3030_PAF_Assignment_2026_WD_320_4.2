@@ -2,6 +2,7 @@ package backend;
 
 import backend.dto.LoginRequest;
 import backend.dto.ProfileUpdateRequest;
+import backend.dto.ResetPasswordWithOtpRequest;
 import backend.dto.SignupRequest;
 import backend.repository.AppUserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -192,5 +193,54 @@ class AuthIntegrationTests {
                                 )
                         )))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void userCanResetPasswordWithEmailOtp() throws Exception {
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new SignupRequest(
+                                        "Reset User",
+                                        "reset-user@campushub.com",
+                                        "Reset@123",
+                                        "0791234567",
+                                        "student"
+                                )
+                        )))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"reset-user@campushub.com"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("An OTP has been sent to your email."));
+
+        String otp = appUserRepository.findByEmailIgnoreCase("reset-user@campushub.com")
+                .orElseThrow()
+                .getPasswordResetOtp();
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new ResetPasswordWithOtpRequest(
+                                        "reset-user@campushub.com",
+                                        otp,
+                                        "Fresh@123",
+                                        "Fresh@123"
+                                )
+                        )))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password reset successful. You can log in now."));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("reset-user@campushub.com", "Fresh@123")
+                        )))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty());
     }
 }

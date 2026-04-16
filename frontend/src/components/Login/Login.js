@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { loginUser, loginWithGoogle } from "../../services/api";
 import { routeForRole } from "../../utils/auth";
+import ForgotPasswordModal from "./ForgotPasswordModal";
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
@@ -46,6 +47,7 @@ function Login({ session, onLogin }) {
   const [googleSetupError, setGoogleSetupError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) {
@@ -224,6 +226,20 @@ function Login({ session, onLogin }) {
               />
             </label>
 
+            <div className="-mt-1 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setError("");
+                  setSuccessMessage("");
+                  setIsForgotPasswordOpen(true);
+                }}
+                className="text-sm font-semibold text-accent transition hover:text-primary"
+              >
+                Forgot password?
+              </button>
+            </div>
+
             {error ? (
               <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
                 {error}
@@ -297,6 +313,16 @@ function Login({ session, onLogin }) {
           </div>
         </section>
       </section>
+
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        defaultEmail={formData.email.trim().toLowerCase()}
+        onClose={() => setIsForgotPasswordOpen(false)}
+        onSuccess={(message) => {
+          setError("");
+          setSuccessMessage(message);
+        }}
+      />
     </main>
   );
 }

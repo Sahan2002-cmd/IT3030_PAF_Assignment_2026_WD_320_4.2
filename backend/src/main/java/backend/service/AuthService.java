@@ -2,9 +2,12 @@ package backend.service;
 
 import backend.dto.ApprovalResponse;
 import backend.dto.AuthResponse;
+import backend.dto.ForgotPasswordRequest;
 import backend.dto.GoogleAuthRequest;
 import backend.dto.LoginRequest;
+import backend.dto.MessageResponse;
 import backend.dto.ProfileUpdateRequest;
+import backend.dto.ResetPasswordWithOtpRequest;
 import backend.dto.SignupRequest;
 import backend.dto.UserSummaryResponse;
 import backend.model.AppUser;
@@ -12,7 +15,9 @@ import backend.model.Role;
 import backend.repository.AppUserRepository;
 import backend.security.GoogleTokenVerifierService;
 import backend.security.JwtService;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,19 +39,22 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final GoogleTokenVerifierService googleTokenVerifierService;
+    private final PasswordResetOtpNotifier passwordResetOtpNotifier;
 
     public AuthService(
             AppUserRepository appUserRepository,
             AuthenticationManager authenticationManager,
             JwtService jwtService,
             PasswordEncoder passwordEncoder,
-            GoogleTokenVerifierService googleTokenVerifierService
+            GoogleTokenVerifierService googleTokenVerifierService,
+            PasswordResetOtpNotifier passwordResetOtpNotifier
     ) {
         this.appUserRepository = appUserRepository;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
         this.googleTokenVerifierService = googleTokenVerifierService;
+        this.passwordResetOtpNotifier = passwordResetOtpNotifier;
     }
 
     @Transactional
@@ -179,6 +187,50 @@ public class AuthService {
     }
 
     @Transactional
+    public MessageResponse requestPasswordResetOtp(ForgotPasswordRequest request) {
+        AppUser user = appUserRepository.findByEmailIgnoreCase(request.email().trim().toLowerCase()).orElse(null);
+
+        if (user == null) {
+            return new MessageResponse("If that email is registered, an OTP has been sent.");
+        }
+
+        String otp = generateOtp();
+        user.setPasswordResetOtp(otp);
+        user.setPasswordResetOtpExpiresAt(LocalDateTime.now().plusMinutes(10));
+        passwordResetOtpNotifier.sendOtp(user.getEmail(), user.getName(), otp);
+
+        return new MessageResponse("An OTP has been sent to your email.");
+    }
+
+    @Transactional
+    public MessageResponse resetPasswordWithOtp(ResetPasswordWithOtpRequest request) {
+        AppUser user = appUserRepository.findByEmailIgnoreCase(request.email().trim().toLowerCase())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email or OTP"));
+
+        if (!request.newPassword().equals(request.confirmNewPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New passwords do not match");
+        }
+
+        if (user.getPasswordResetOtp() == null || user.getPasswordResetOtpExpiresAt() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP is invalid or expired");
+        }
+
+        if (user.getPasswordResetOtpExpiresAt().isBefore(LocalDateTime.now())) {
+            clearPasswordResetOtp(user);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP is invalid or expired");
+        }
+
+        if (!user.getPasswordResetOtp().equals(request.otp().trim())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email or OTP");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        clearPasswordResetOtp(user);
+
+        return new MessageResponse("Password reset successful. You can log in now.");
+    }
+
+    @Transactional
     public AuthResponse updateProfile(AppUser authenticatedUser, ProfileUpdateRequest request) {
         AppUser user = appUserRepository.findById(authenticatedUser.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
@@ -291,5 +343,14 @@ public class AuthService {
         }
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
+    }
+
+    private String generateOtp() {
+        return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
+    }
+
+    private void clearPasswordResetOtp(AppUser user) {
+        user.setPasswordResetOtp(null);
+        user.setPasswordResetOtpExpiresAt(null);
     }
 }

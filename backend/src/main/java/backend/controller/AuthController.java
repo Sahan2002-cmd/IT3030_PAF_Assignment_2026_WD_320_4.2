@@ -1,9 +1,12 @@
 package backend.controller;
 
 import backend.dto.AuthResponse;
+import backend.dto.ForgotPasswordRequest;
 import backend.dto.GoogleAuthRequest;
 import backend.dto.LoginRequest;
+import backend.dto.MessageResponse;
 import backend.dto.ProfileUpdateRequest;
+import backend.dto.ResetPasswordWithOtpRequest;
 import backend.dto.SignupRequest;
 import backend.dto.UserSummaryResponse;
 import backend.model.AppUser;
@@ -41,6 +44,16 @@ public class AuthController {
     @PostMapping("/google")
     public ResponseEntity<AuthResponse> loginWithGoogle(@Valid @RequestBody GoogleAuthRequest request) {
         return ResponseEntity.ok(authService.loginWithGoogle(request));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<MessageResponse> requestPasswordResetOtp(@Valid @RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(authService.requestPasswordResetOtp(request));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<MessageResponse> resetPasswordWithOtp(@Valid @RequestBody ResetPasswordWithOtpRequest request) {
+        return ResponseEntity.ok(authService.resetPasswordWithOtp(request));
     }
 
     @GetMapping("/me")
