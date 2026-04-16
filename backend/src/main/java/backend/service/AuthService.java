@@ -2,9 +2,12 @@ package backend.service;
 
 import backend.dto.ApprovalResponse;
 import backend.dto.AuthResponse;
+import backend.dto.ForgotPasswordRequest;
 import backend.dto.GoogleAuthRequest;
 import backend.dto.LoginRequest;
+import backend.dto.MessageResponse;
 import backend.dto.ProfileUpdateRequest;
+import backend.dto.ResetPasswordWithOtpRequest;
 import backend.dto.SignupRequest;
 import backend.dto.UserSummaryResponse;
 import backend.model.AppUser;
@@ -12,9 +15,12 @@ import backend.model.Role;
 import backend.repository.AppUserRepository;
 import backend.security.GoogleTokenVerifierService;
 import backend.security.JwtService;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -22,7 +28,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
+import static backend.validation.AuthValidationRules.PASSWORD_MESSAGE;
 
 @Service
 public class AuthService {
@@ -32,19 +40,22 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final GoogleTokenVerifierService googleTokenVerifierService;
+    private final PasswordResetOtpNotifier passwordResetOtpNotifier;
 
     public AuthService(
             AppUserRepository appUserRepository,
             AuthenticationManager authenticationManager,
             JwtService jwtService,
             PasswordEncoder passwordEncoder,
-            GoogleTokenVerifierService googleTokenVerifierService
+            GoogleTokenVerifierService googleTokenVerifierService,
+            PasswordResetOtpNotifier passwordResetOtpNotifier
     ) {
         this.appUserRepository = appUserRepository;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
         this.googleTokenVerifierService = googleTokenVerifierService;
+        this.passwordResetOtpNotifier = passwordResetOtpNotifier;
     }
 
     @Transactional
@@ -70,7 +81,8 @@ public class AuthService {
                 request.email().trim().toLowerCase(),
                 passwordEncoder.encode(request.password()),
                 role,
-                approved
+                approved,
+                request.mobileNumber().trim()
         );
         AppUser savedUser = appUserRepository.save(user);
 
@@ -82,6 +94,7 @@ public class AuthService {
                 savedUser.getId(),
                 savedUser.getName(),
                 savedUser.getEmail(),
+                savedUser.getMobileNumber(),
                 savedUser.getRole().name(),
                 savedUser.isApproved(),
                 null,
@@ -175,12 +188,57 @@ public class AuthService {
     }
 
     @Transactional
+    public MessageResponse requestPasswordResetOtp(ForgotPasswordRequest request) {
+        AppUser user = appUserRepository.findByEmailIgnoreCase(request.email().trim().toLowerCase()).orElse(null);
+
+        if (user == null) {
+            return new MessageResponse("If that email is registered, an OTP has been sent.");
+        }
+
+        String otp = generateOtp();
+        user.setPasswordResetOtp(otp);
+        user.setPasswordResetOtpExpiresAt(LocalDateTime.now().plusMinutes(10));
+        passwordResetOtpNotifier.sendOtp(user.getEmail(), user.getName(), otp);
+
+        return new MessageResponse("An OTP has been sent to your email.");
+    }
+
+    @Transactional
+    public MessageResponse resetPasswordWithOtp(ResetPasswordWithOtpRequest request) {
+        AppUser user = appUserRepository.findByEmailIgnoreCase(request.email().trim().toLowerCase())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email or OTP"));
+
+        if (!request.newPassword().equals(request.confirmNewPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New passwords do not match");
+        }
+
+        if (user.getPasswordResetOtp() == null || user.getPasswordResetOtpExpiresAt() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP is invalid or expired");
+        }
+
+        if (user.getPasswordResetOtpExpiresAt().isBefore(LocalDateTime.now())) {
+            clearPasswordResetOtp(user);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP is invalid or expired");
+        }
+
+        if (!user.getPasswordResetOtp().equals(request.otp().trim())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email or OTP");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        clearPasswordResetOtp(user);
+
+        return new MessageResponse("Password reset successful. You can log in now.");
+    }
+
+    @Transactional
     public AuthResponse updateProfile(AppUser authenticatedUser, ProfileUpdateRequest request) {
         AppUser user = appUserRepository.findById(authenticatedUser.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         String nextEmail = request.email().trim().toLowerCase();
         String nextName = request.name().trim();
+        String nextMobileNumber = request.mobileNumber().trim();
 
         if (!user.getEmail().equalsIgnoreCase(nextEmail) && appUserRepository.existsByEmailIgnoreCase(nextEmail)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
@@ -188,6 +246,8 @@ public class AuthService {
 
         user.setName(nextName);
         user.setEmail(nextEmail);
+        user.setMobileNumber(nextMobileNumber);
+        updatePasswordIfRequested(user, request);
 
         return buildAuthResponse(
                 user,
@@ -198,6 +258,13 @@ public class AuthService {
 
     public List<UserSummaryResponse> getPendingTechnicians() {
         return appUserRepository.findByRoleAndApprovedOrderByCreatedAtAsc(Role.TECHNICIAN, false)
+                .stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    public List<UserSummaryResponse> getAllUsers() {
+        return appUserRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
                 .stream()
                 .map(this::toSummary)
                 .toList();
@@ -224,11 +291,25 @@ public class AuthService {
         );
     }
 
+    @Transactional
+    public MessageResponse deleteUser(Long userId, AppUser adminUser) {
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (adminUser != null && user.getId().equals(adminUser.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot delete your own account");
+        }
+
+        appUserRepository.delete(user);
+        return new MessageResponse("User deleted successfully.");
+    }
+
     private UserSummaryResponse toSummary(AppUser user) {
         return new UserSummaryResponse(
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
+                user.getMobileNumber(),
                 user.getRole().name(),
                 user.isApproved(),
                 user.getCreatedAt()
@@ -240,10 +321,57 @@ public class AuthService {
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
+                user.getMobileNumber(),
                 user.getRole().name(),
                 user.isApproved(),
                 token,
                 message
         );
+    }
+
+    private void updatePasswordIfRequested(AppUser user, ProfileUpdateRequest request) {
+        boolean wantsPasswordChange =
+                StringUtils.hasText(request.currentPassword())
+                        || StringUtils.hasText(request.newPassword())
+                        || StringUtils.hasText(request.confirmNewPassword());
+
+        if (!wantsPasswordChange) {
+            return;
+        }
+
+        if (!StringUtils.hasText(request.currentPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is required");
+        }
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is incorrect");
+        }
+
+        if (!StringUtils.hasText(request.newPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New password is required");
+        }
+
+        if (!StringUtils.hasText(request.confirmNewPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please confirm your new password");
+        }
+
+        if (!request.newPassword().equals(request.confirmNewPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New passwords do not match");
+        }
+
+        if (!backend.validation.AuthValidationRules.isValidPassword(request.newPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, PASSWORD_MESSAGE);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+    }
+
+    private String generateOtp() {
+        return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
+    }
+
+    private void clearPasswordResetOtp(AppUser user) {
+        user.setPasswordResetOtp(null);
+        user.setPasswordResetOtpExpiresAt(null);
     }
 }

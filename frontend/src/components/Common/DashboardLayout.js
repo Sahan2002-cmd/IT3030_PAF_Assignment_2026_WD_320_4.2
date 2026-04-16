@@ -29,12 +29,12 @@ function DashboardLayout({
     <>
       <main className="min-h-screen px-4 py-8 sm:px-6">
         <section className="mx-auto w-full max-w-6xl">
-          <header className="rounded-[32px] border border-white/70 bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.10)] backdrop-blur sm:p-8">
+          <header className="rounded-[28px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] backdrop-blur sm:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
-                <p className="text-sm font-semibold uppercase tracking-[0.35em] text-accent">{eyebrow}</p>
-                <h1 className="mt-4 text-4xl font-extrabold leading-tight text-primary sm:text-5xl">{title}</h1>
-                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-500">{description}</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.28em] text-accent">{eyebrow}</p>
+                <h1 className="mt-3 text-3xl font-extrabold leading-tight text-primary sm:text-4xl">{title}</h1>
+                <p className="mt-3 max-w-2xl text-base leading-7 text-slate-500">{description}</p>
 
                 <div className="mt-5 flex flex-wrap gap-3">
                   <span className="rounded-full bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white">
@@ -43,6 +43,11 @@ function DashboardLayout({
                   <span className="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-800">
                     {user?.email}
                   </span>
+                  {user?.mobileNumber ? (
+                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">
+                      {user.mobileNumber}
+                    </span>
+                  ) : null}
                 </div>
               </div>
 

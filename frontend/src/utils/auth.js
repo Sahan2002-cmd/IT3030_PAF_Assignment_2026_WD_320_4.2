@@ -26,6 +26,7 @@ export function storeSession(authResponse) {
     id: authResponse.id,
     name: authResponse.name,
     email: authResponse.email,
+    mobileNumber: authResponse.mobileNumber,
     role: authResponse.role,
     approved: authResponse.approved,
   };

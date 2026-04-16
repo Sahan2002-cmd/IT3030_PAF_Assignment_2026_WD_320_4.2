@@ -30,8 +30,16 @@ public class AppUser implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(length = 10)
+    private String mobileNumber;
+
     @Column(nullable = false)
     private String password;
+
+    @Column(length = 6)
+    private String passwordResetOtp;
+
+    private LocalDateTime passwordResetOtpExpiresAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -47,8 +55,13 @@ public class AppUser implements UserDetails {
     }
 
     public AppUser(String name, String email, String password, Role role, boolean approved) {
+        this(name, email, password, role, approved, null);
+    }
+
+    public AppUser(String name, String email, String password, Role role, boolean approved, String mobileNumber) {
         this.name = name;
         this.email = email;
+        this.mobileNumber = mobileNumber;
         this.password = password;
         this.role = role;
         this.approved = approved;
@@ -79,6 +92,30 @@ public class AppUser implements UserDetails {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getMobileNumber() {
+        return mobileNumber;
+    }
+
+    public void setMobileNumber(String mobileNumber) {
+        this.mobileNumber = mobileNumber;
+    }
+
+    public String getPasswordResetOtp() {
+        return passwordResetOtp;
+    }
+
+    public void setPasswordResetOtp(String passwordResetOtp) {
+        this.passwordResetOtp = passwordResetOtp;
+    }
+
+    public LocalDateTime getPasswordResetOtpExpiresAt() {
+        return passwordResetOtpExpiresAt;
+    }
+
+    public void setPasswordResetOtpExpiresAt(LocalDateTime passwordResetOtpExpiresAt) {
+        this.passwordResetOtpExpiresAt = passwordResetOtpExpiresAt;
     }
 
     @Override

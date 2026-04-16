@@ -16,7 +16,9 @@ function App() {
     const storedSession = loadSession();
 
     return {
-      status: storedSession.token ? "loading" : "anonymous",
+      status: storedSession.token
+        ? (storedSession.user ? "authenticated" : "loading")
+        : "anonymous",
       token: storedSession.token,
       user: storedSession.user,
     };
@@ -41,6 +43,7 @@ function App() {
           id: currentUser.id,
           name: currentUser.name,
           email: currentUser.email,
+          mobileNumber: currentUser.mobileNumber,
           role: currentUser.role,
           approved: currentUser.approved,
           createdAt: currentUser.createdAt,
@@ -107,6 +110,7 @@ function App() {
         id: currentUser.id,
         name: currentUser.name,
         email: currentUser.email,
+        mobileNumber: currentUser.mobileNumber,
         role: currentUser.role,
         approved: currentUser.approved,
         createdAt: currentUser.createdAt,
