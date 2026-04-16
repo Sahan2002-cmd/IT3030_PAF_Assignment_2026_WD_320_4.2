@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import DashboardLayout from "../Common/DashboardLayout";
 import { approveTechnician, fetchPendingTechnicians } from "../../services/api";
 
-function AdminDashboard({ user, token, onLogout, onRefreshUser }) {
+function AdminDashboard({ user, token, onLogout, onRefreshUser, onProfileUpdate }) {
   const [pendingTechnicians, setPendingTechnicians] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [approvingId, setApprovingId] = useState(null);
@@ -70,74 +70,43 @@ function AdminDashboard({ user, token, onLogout, onRefreshUser }) {
     }
   }
 
-  const actions = (
-    <button
-      type="button"
-      onClick={loadPendingTechnicians}
-      className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-primary transition hover:border-accent/40"
-    >
-      <span aria-hidden="true">[+]</span>
-      Refresh list
-    </button>
-  );
-
   return (
     <DashboardLayout
-      eyebrow="Admin Control"
+      eyebrow="Admin"
       title="Technician approvals"
-      description="This dashboard uses the backend admin endpoints to review and approve technician accounts."
+      description="Only the approval queue is shown here so the admin workspace stays focused on the one backend action that matters."
       user={user}
       onLogout={onLogout}
-      actions={actions}
+      onProfileUpdate={onProfileUpdate}
+      actions={
+        <button
+          type="button"
+          onClick={loadPendingTechnicians}
+          className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
+        >
+          Refresh approvals
+        </button>
+      }
     >
-      <div className="grid gap-4 md:grid-cols-3">
-        <article className="rounded-[28px] border border-slate-200 bg-slate-50/75 p-5">
-          <div className="flex items-center gap-3">
-            <span className="text-lg font-bold text-accent">PN</span>
-            <h2 className="text-base font-semibold text-primary">Pending technicians</h2>
+      <section className="rounded-[32px] border border-white/70 bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] backdrop-blur sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Pending queue</p>
+            <h2 className="mt-3 text-3xl font-extrabold text-primary">{pendingTechnicians.length}</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Technician accounts waiting for admin approval
+            </p>
           </div>
-          <p className="mt-4 text-4xl font-extrabold text-primary">{pendingTechnicians.length}</p>
-          <p className="mt-2 text-sm leading-6 text-slate-500">Accounts waiting for admin approval.</p>
-        </article>
-
-        <article className="rounded-[28px] border border-slate-200 bg-slate-50/75 p-5">
-          <div className="flex items-center gap-3">
-            <span className="text-lg font-bold text-secondary">AD</span>
-            <h2 className="text-base font-semibold text-primary">Admin authority</h2>
-          </div>
-          <p className="mt-4 text-sm leading-7 text-slate-500">
-            Only admins can access `/api/admin/technicians/pending` and `/api/admin/technicians/{'{id}'}/approve`.
-          </p>
-        </article>
-
-        <article className="rounded-[28px] border border-slate-200 bg-slate-50/75 p-5">
-          <div className="flex items-center gap-3">
-            <span className="text-lg font-bold text-accent">OK</span>
-            <h2 className="text-base font-semibold text-primary">Backend sync</h2>
-          </div>
-          <p className="mt-4 text-sm leading-7 text-slate-500">
-            The dashboard refreshes directly from the backend, so what you see here is the real approval queue.
-          </p>
-        </article>
-      </div>
-
-      {error ? (
-        <p className="mt-6 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
-      ) : null}
-      {successMessage ? (
-        <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {successMessage}
-        </p>
-      ) : null}
-
-      <section className="mt-8 rounded-[32px] border border-slate-200 bg-white p-6">
-        <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-accent">TN</span>
-          <h2 className="text-2xl font-bold text-primary">Pending Technician Requests</h2>
         </div>
-        <p className="mt-3 text-base leading-7 text-slate-500">
-          Approving a technician here allows that user to log in and access technician features.
-        </p>
+
+        {error ? (
+          <p className="mt-6 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
+        ) : null}
+        {successMessage ? (
+          <p className="mt-6 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-700">
+            {successMessage}
+          </p>
+        ) : null}
 
         {isLoading ? (
           <div className="mt-6 rounded-[28px] border border-dashed border-slate-200 bg-slate-50/70 p-10 text-center text-slate-500">
@@ -146,13 +115,10 @@ function AdminDashboard({ user, token, onLogout, onRefreshUser }) {
         ) : null}
 
         {!isLoading && pendingTechnicians.length === 0 ? (
-          <div className="mt-6 rounded-[28px] border border-dashed border-slate-200 bg-slate-50/70 p-10 text-center">
-            <span className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-lg font-bold text-emerald-700">
-              OK
-            </span>
-            <h3 className="mt-4 text-xl font-bold text-primary">No pending approvals</h3>
+          <div className="mt-6 rounded-[28px] border border-dashed border-sky-200 bg-sky-50/70 p-10 text-center">
+            <h3 className="text-xl font-bold text-primary">No pending approvals</h3>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Every technician signup has already been reviewed.
+              All technician signups have already been reviewed.
             </p>
           </div>
         ) : null}
@@ -162,7 +128,7 @@ function AdminDashboard({ user, token, onLogout, onRefreshUser }) {
             {pendingTechnicians.map((technician) => (
               <article
                 key={technician.id}
-                className="rounded-[28px] border border-slate-200 bg-slate-50/75 p-5 shadow-[0_14px_30px_rgba(15,23,42,0.05)]"
+                className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5"
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div>
@@ -173,7 +139,7 @@ function AdminDashboard({ user, token, onLogout, onRefreshUser }) {
                         {technician.role}
                       </span>
                       <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-                        Pending approval
+                        Waiting approval
                       </span>
                     </div>
                   </div>
@@ -181,11 +147,10 @@ function AdminDashboard({ user, token, onLogout, onRefreshUser }) {
                   <button
                     type="button"
                     onClick={() => handleApprove(technician.id)}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-70"
+                    className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-70"
                     disabled={approvingId === technician.id}
                   >
-                    <span aria-hidden="true">[OK]</span>
-                    {approvingId === technician.id ? "Approving..." : "Approve technician"}
+                    {approvingId === technician.id ? "Approving..." : "Approve"}
                   </button>
                 </div>
               </article>

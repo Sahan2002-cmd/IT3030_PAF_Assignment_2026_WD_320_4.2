@@ -47,8 +47,23 @@ export function signupUser(payload) {
   });
 }
 
+export function loginWithGoogle(payload) {
+  return apiRequest("/api/auth/google", {
+    method: "POST",
+    body: payload,
+  });
+}
+
 export function fetchCurrentUser(token) {
   return apiRequest("/api/auth/me", { token });
+}
+
+export function updateOwnProfile(payload, token) {
+  return apiRequest("/api/auth/me", {
+    method: "PATCH",
+    body: payload,
+    token,
+  });
 }
 
 export function fetchPendingTechnicians(token) {

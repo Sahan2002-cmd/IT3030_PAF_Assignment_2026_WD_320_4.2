@@ -1,6 +1,7 @@
 package backend;
 
 import backend.dto.LoginRequest;
+import backend.dto.ProfileUpdateRequest;
 import backend.dto.SignupRequest;
 import backend.repository.AppUserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -103,6 +104,52 @@ class AuthIntegrationTests {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(technicianLogin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void authenticatedUserCanUpdateOwnProfile() throws Exception {
+        SignupRequest signupRequest = new SignupRequest(
+                "Profile User",
+                "profile1@campushub.com",
+                "Profile@123",
+                "student"
+        );
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(signupRequest)))
+                .andExpect(status().isOk());
+
+        String loginResponse = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("profile1@campushub.com", "Profile@123")
+                        )))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String token = objectMapper.readTree(loginResponse).get("token").asText();
+
+        mockMvc.perform(patch("/api/auth/me")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new ProfileUpdateRequest("Updated User", "profile-updated@campushub.com")
+                        )))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Updated User"))
+                .andExpect(jsonPath("$.email").value("profile-updated@campushub.com"))
+                .andExpect(jsonPath("$.token").isNotEmpty());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("profile-updated@campushub.com", "Profile@123")
+                        )))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty());
     }

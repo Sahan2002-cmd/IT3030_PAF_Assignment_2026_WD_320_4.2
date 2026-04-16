@@ -1,50 +1,39 @@
 import React from "react";
 import DashboardLayout from "../Common/DashboardLayout";
 
-function TechnicianDashboard({ user, onLogout }) {
+function TechnicianDashboard({ user, onLogout, onProfileUpdate }) {
   return (
     <DashboardLayout
-      eyebrow="Technician Workspace"
+      eyebrow="Technician"
       title="Technician dashboard"
-      description="You are seeing this page because your technician account has already been approved by an admin."
+      description="This page appears only after admin approval. If you can see it, your account has already cleared the approval step."
       user={user}
       onLogout={onLogout}
+      onProfileUpdate={onProfileUpdate}
     >
-      <div className="grid gap-4 md:grid-cols-3">
-        <article className="rounded-[28px] border border-slate-200 bg-slate-50/75 p-5">
-          <span className="text-lg font-bold text-accent">TN</span>
-          <h2 className="mt-4 text-lg font-bold text-primary">Technician role</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            The backend routed you here only after successful JWT login with the technician role.
-          </p>
-        </article>
-
-        <article className="rounded-[28px] border border-slate-200 bg-slate-50/75 p-5">
-          <span className="text-lg font-bold text-secondary">OK</span>
-          <h2 className="mt-4 text-lg font-bold text-primary">Approved account</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Backend approval is complete, so login is allowed and protected screens are available.
-          </p>
-        </article>
-
-        <article className="rounded-[28px] border border-slate-200 bg-slate-50/75 p-5">
-          <span className="text-lg font-bold text-accent">PR</span>
-          <h2 className="mt-4 text-lg font-bold text-primary">Protected route</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            This screen is hidden from other roles and depends on the stored JWT token.
-          </p>
-        </article>
-      </div>
-
-      <section className="mt-8 rounded-[32px] border border-slate-200 bg-white p-6">
-        <h2 className="text-2xl font-bold text-primary">Technician account summary</h2>
-        <p className="mt-3 text-base leading-7 text-slate-500">
-          Name: {user?.name}
-          <br />
-          Email: {user?.email}
-          <br />
-          Approved: {user?.approved ? "Yes" : "No"}
+      <section className="rounded-[32px] border border-white/70 bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] backdrop-blur sm:p-8">
+        <h2 className="text-2xl font-bold text-primary">Technician access confirmed</h2>
+        <p className="mt-4 max-w-3xl text-base leading-7 text-slate-500">
+          The backend only allows technicians into this route after approval, so this dashboard keeps the focus on your account status instead of filler content.
         </p>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <article className="rounded-[28px] border border-sky-100 bg-sky-50/80 p-5">
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Approval</p>
+            <p className="mt-3 text-lg font-bold text-primary">{user?.approved ? "Approved" : "Pending"}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Your current technician approval state is controlled entirely by the admin backend endpoint.
+            </p>
+          </article>
+
+          <article className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Profile</p>
+            <p className="mt-3 text-lg font-bold text-primary">Keep your details current</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Use the profile avatar in the top-right corner to edit your account details.
+            </p>
+          </article>
+        </div>
       </section>
     </DashboardLayout>
   );

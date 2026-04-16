@@ -8,7 +8,7 @@ import StudentDashboard from "./components/StudentDashboard/StudentDashboard";
 import TechnicianDashboard from "./components/TechnicianDashboard/TechnicianDashboard";
 import ProtectedRoute from "./components/Common/ProtectedRoute";
 import LoadingScreen from "./components/Common/LoadingScreen";
-import { fetchCurrentUser } from "./services/api";
+import { fetchCurrentUser, updateOwnProfile } from "./services/api";
 import { clearSession, loadSession, routeForRole, storeSession, updateStoredUser } from "./utils/auth";
 
 function App() {
@@ -75,6 +75,10 @@ function App() {
 
   function handleLogin(authResponse) {
     const nextSession = storeSession(authResponse);
+    if (!nextSession.token || !nextSession.user) {
+      return;
+    }
+
     setSession({
       status: "authenticated",
       token: nextSession.token,
@@ -119,6 +123,28 @@ function App() {
     }
   }
 
+  async function handleProfileUpdate(payload) {
+    if (!session.token) {
+      handleLogout();
+      throw new Error("Your session has expired. Please sign in again.");
+    }
+
+    const response = await updateOwnProfile(payload, session.token);
+    const nextSession = storeSession(response);
+
+    if (!nextSession.token || !nextSession.user) {
+      throw new Error("Profile update did not return a valid session.");
+    }
+
+    setSession({
+      status: "authenticated",
+      token: nextSession.token,
+      user: nextSession.user,
+    });
+
+    return response;
+  }
+
   function renderHome() {
     if (session.status === "loading") {
       return <LoadingScreen />;
@@ -150,6 +176,7 @@ function App() {
                   token={session.token}
                   onLogout={handleLogout}
                   onRefreshUser={handleRefreshUser}
+                  onProfileUpdate={handleProfileUpdate}
                 />
               </ProtectedRoute>
             }
@@ -158,7 +185,11 @@ function App() {
             path="/student-dashboard"
             element={
               <ProtectedRoute session={session} requiredRole="STUDENT">
-                <StudentDashboard user={session.user} onLogout={handleLogout} />
+                <StudentDashboard
+                  user={session.user}
+                  onLogout={handleLogout}
+                  onProfileUpdate={handleProfileUpdate}
+                />
               </ProtectedRoute>
             }
           />
@@ -166,7 +197,11 @@ function App() {
             path="/technician-dashboard"
             element={
               <ProtectedRoute session={session} requiredRole="TECHNICIAN">
-                <TechnicianDashboard user={session.user} onLogout={handleLogout} />
+                <TechnicianDashboard
+                  user={session.user}
+                  onLogout={handleLogout}
+                  onProfileUpdate={handleProfileUpdate}
+                />
               </ProtectedRoute>
             }
           />

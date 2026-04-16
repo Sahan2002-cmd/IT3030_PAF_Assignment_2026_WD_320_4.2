@@ -7,9 +7,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#0F172A",
-        secondary: "#22C55E",
-        accent: "#06B6D4",
+        primary: "#123C7A",
+        secondary: "#93C5FD",
+        accent: "#2563EB",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
