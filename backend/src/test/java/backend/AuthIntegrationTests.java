@@ -2,6 +2,7 @@ package backend;
 
 import backend.dto.LoginRequest;
 import backend.dto.ProfileUpdateRequest;
+import backend.dto.ResetPasswordWithOtpRequest;
 import backend.dto.SignupRequest;
 import backend.repository.AppUserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -167,6 +169,84 @@ class AuthIntegrationTests {
     }
 
     @Test
+    void signupRequiresValidMobileNumberAndPasswordComplexity() throws Exception {
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new SignupRequest(
+                                        "Invalid Mobile",
+                                        "invalid-mobile@campushub.com",
+                                        "ValidPass@1",
+                                        "12345",
+                                        "student"
+                                )
+                        )))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new SignupRequest(
+                                        "Invalid Password",
+                                        "invalid-password@campushub.com",
+                                        "lowercase",
+                                        "0781234567",
+                                        "student"
+                                )
+                        )))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void userCanResetPasswordWithEmailOtp() throws Exception {
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new SignupRequest(
+                                        "Reset User",
+                                        "reset-user@campushub.com",
+                                        "Reset@123",
+                                        "0791234567",
+                                        "student"
+                                )
+                        )))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"reset-user@campushub.com"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("An OTP has been sent to your email."));
+
+        String otp = appUserRepository.findByEmailIgnoreCase("reset-user@campushub.com")
+                .orElseThrow()
+                .getPasswordResetOtp();
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new ResetPasswordWithOtpRequest(
+                                        "reset-user@campushub.com",
+                                        otp,
+                                        "Fresh@123",
+                                        "Fresh@123"
+                                )
+                        )))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password reset successful. You can log in now."));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("reset-user@campushub.com", "Fresh@123")
+                        )))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
     void adminCanViewAllUsersAndDeleteOtherUsers() throws Exception {
         mockMvc.perform(post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -199,9 +279,34 @@ class AuthIntegrationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(2))));
 
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/admin/users/{userId}", userId)
+        mockMvc.perform(delete("/api/admin/users/{userId}", userId)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("User deleted successfully."));
+
+        mockMvc.perform(get("/api/admin/users")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.email == 'delete-me@campushub.com')]").isEmpty());
+    }
+
+    @Test
+    void adminCannotDeleteOwnAccount() throws Exception {
+        String adminLoginResponse = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("admin@campushub.com", "Admin@123")
+                        )))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String adminToken = objectMapper.readTree(adminLoginResponse).get("token").asText();
+        Long adminId = appUserRepository.findByEmailIgnoreCase("admin@campushub.com").orElseThrow().getId();
+
+        mockMvc.perform(delete("/api/admin/users/{userId}", adminId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
     }
 }

@@ -2,10 +2,12 @@ package backend.service;
 
 import backend.dto.ApprovalResponse;
 import backend.dto.AuthResponse;
-import backend.dto.MessageResponse;
+import backend.dto.ForgotPasswordRequest;
 import backend.dto.GoogleAuthRequest;
 import backend.dto.LoginRequest;
+import backend.dto.MessageResponse;
 import backend.dto.ProfileUpdateRequest;
+import backend.dto.ResetPasswordWithOtpRequest;
 import backend.dto.SignupRequest;
 import backend.dto.UserSummaryResponse;
 import backend.model.AppUser;
@@ -13,10 +15,12 @@ import backend.model.Role;
 import backend.repository.AppUserRepository;
 import backend.security.GoogleTokenVerifierService;
 import backend.security.JwtService;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -41,6 +45,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final GoogleTokenVerifierService googleTokenVerifierService;
     private final NotificationEmailService notificationEmailService;
+    private final PasswordResetOtpNotifier passwordResetOtpNotifier;
 
     public AuthService(
             AppUserRepository appUserRepository,
@@ -48,7 +53,8 @@ public class AuthService {
             JwtService jwtService,
             PasswordEncoder passwordEncoder,
             GoogleTokenVerifierService googleTokenVerifierService,
-            NotificationEmailService notificationEmailService
+            NotificationEmailService notificationEmailService,
+            PasswordResetOtpNotifier passwordResetOtpNotifier
     ) {
         this.appUserRepository = appUserRepository;
         this.authenticationManager = authenticationManager;
@@ -56,6 +62,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.googleTokenVerifierService = googleTokenVerifierService;
         this.notificationEmailService = notificationEmailService;
+        this.passwordResetOtpNotifier = passwordResetOtpNotifier;
     }
 
     @Transactional
@@ -120,8 +127,7 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account is not active yet");
         }
 
-        String token = jwtService.generateToken(user);
-        return buildAuthResponse(user, token, "Login successful");
+        return buildAuthResponse(user, jwtService.generateToken(user), "Login successful");
     }
 
     @Transactional
@@ -188,6 +194,54 @@ public class AuthService {
     }
 
     @Transactional
+    public MessageResponse requestPasswordResetOtp(ForgotPasswordRequest request) {
+        AppUser user = appUserRepository.findByEmailIgnoreCase(request.email().trim().toLowerCase()).orElse(null);
+
+        if (user == null) {
+            return new MessageResponse("If that email is registered, an OTP has been sent.");
+        }
+
+        String otp = generateOtp();
+        user.setPasswordResetOtp(otp);
+        user.setPasswordResetOtpExpiresAt(LocalDateTime.now().plusMinutes(10));
+        passwordResetOtpNotifier.sendOtp(user.getEmail(), user.getName(), otp);
+
+        return new MessageResponse("An OTP has been sent to your email.");
+    }
+
+    @Transactional
+    public MessageResponse resetPasswordWithOtp(ResetPasswordWithOtpRequest request) {
+        AppUser user = appUserRepository.findByEmailIgnoreCase(request.email().trim().toLowerCase())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email or OTP"));
+
+        if (!request.newPassword().equals(request.confirmNewPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New passwords do not match");
+        }
+
+        if (!isValidPassword(request.newPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, PASSWORD_MESSAGE);
+        }
+
+        if (user.getPasswordResetOtp() == null || user.getPasswordResetOtpExpiresAt() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP is invalid or expired");
+        }
+
+        if (user.getPasswordResetOtpExpiresAt().isBefore(LocalDateTime.now())) {
+            clearPasswordResetOtp(user);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP is invalid or expired");
+        }
+
+        if (!user.getPasswordResetOtp().equals(request.otp().trim())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email or OTP");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        clearPasswordResetOtp(user);
+
+        return new MessageResponse("Password reset successful. You can log in now.");
+    }
+
+    @Transactional
     public AuthResponse updateProfile(AppUser authenticatedUser, ProfileUpdateRequest request) {
         AppUser user = appUserRepository.findById(authenticatedUser.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
@@ -195,8 +249,8 @@ public class AuthService {
         String previousName = user.getName();
         String previousEmail = user.getEmail();
         String previousMobileNumber = user.getMobileNumber();
-        String nextEmail = request.email().trim().toLowerCase();
         String nextName = request.name().trim();
+        String nextEmail = request.email().trim().toLowerCase();
         String nextMobileNumber = request.mobileNumber().trim();
         List<String> emailNotifications = new ArrayList<>();
 
@@ -219,6 +273,7 @@ public class AuthService {
         user.setName(nextName);
         user.setEmail(nextEmail);
         user.setMobileNumber(nextMobileNumber);
+
         if (updatePasswordIfRequested(user, request)) {
             emailNotifications.add("Your password was changed.");
         }
@@ -342,5 +397,14 @@ public class AuthService {
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         return true;
+    }
+
+    private String generateOtp() {
+        return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
+    }
+
+    private void clearPasswordResetOtp(AppUser user) {
+        user.setPasswordResetOtp(null);
+        user.setPasswordResetOtpExpiresAt(null);
     }
 }

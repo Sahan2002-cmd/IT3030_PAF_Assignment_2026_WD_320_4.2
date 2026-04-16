@@ -3,7 +3,6 @@ package backend.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-
 import static backend.validation.AuthValidationRules.MOBILE_NUMBER_MESSAGE;
 import static backend.validation.AuthValidationRules.MOBILE_NUMBER_REGEX;
 import static backend.validation.AuthValidationRules.PASSWORD_MESSAGE;

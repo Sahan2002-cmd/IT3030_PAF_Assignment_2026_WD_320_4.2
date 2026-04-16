@@ -52,7 +52,12 @@ function AdminDashboard({
 
   async function refreshAdminData() {
     setError("");
-    await Promise.all([loadPendingTechnicians(false), loadAllUsers(false)]);
+
+    try {
+      await Promise.all([loadPendingTechnicians(false), loadAllUsers(false)]);
+    } catch {
+      // Individual loaders already surface their errors.
+    }
   }
 
   useEffect(() => {
@@ -168,13 +173,11 @@ function AdminDashboard({
           </article>
         </div>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="mt-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Pending queue</p>
+        <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Pending requests</p>
             <h2 className="mt-3 text-3xl font-extrabold text-primary">{pendingTechnicians.length}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Technician accounts waiting for admin approval
-            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">Accounts waiting for review</p>
           </div>
         </div>
 
@@ -195,9 +198,9 @@ function AdminDashboard({
 
         {!isLoadingApprovals && pendingTechnicians.length === 0 ? (
           <div className="mt-6 rounded-[28px] border border-dashed border-sky-200 bg-sky-50/70 p-10 text-center">
-            <h3 className="text-xl font-bold text-primary">No pending approvals</h3>
+            <h3 className="text-xl font-bold text-primary">No pending requests</h3>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              All technician signups have already been reviewed.
+              There are no technician accounts awaiting approval.
             </p>
           </div>
         ) : null}
@@ -218,7 +221,7 @@ function AdminDashboard({
                         {technician.role}
                       </span>
                       <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-                        Waiting approval
+                        Pending
                       </span>
                     </div>
                   </div>
@@ -267,9 +270,7 @@ function AdminDashboard({
                     <div>
                       <h3 className="text-xl font-bold text-primary">{account.name}</h3>
                       <p className="mt-1 text-sm text-slate-500">{account.email}</p>
-                      {account.mobileNumber ? (
-                        <p className="mt-1 text-sm text-slate-500">{account.mobileNumber}</p>
-                      ) : null}
+                      {account.mobileNumber ? <p className="mt-1 text-sm text-slate-500">{account.mobileNumber}</p> : null}
 
                       <div className="mt-4 flex flex-wrap gap-2">
                         <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white">

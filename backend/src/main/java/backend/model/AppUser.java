@@ -36,6 +36,11 @@ public class AppUser implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    @Column(length = 6)
+    private String passwordResetOtp;
+
+    private LocalDateTime passwordResetOtpExpiresAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
@@ -95,6 +100,22 @@ public class AppUser implements UserDetails {
 
     public void setMobileNumber(String mobileNumber) {
         this.mobileNumber = mobileNumber;
+    }
+
+    public String getPasswordResetOtp() {
+        return passwordResetOtp;
+    }
+
+    public void setPasswordResetOtp(String passwordResetOtp) {
+        this.passwordResetOtp = passwordResetOtp;
+    }
+
+    public LocalDateTime getPasswordResetOtpExpiresAt() {
+        return passwordResetOtpExpiresAt;
+    }
+
+    public void setPasswordResetOtpExpiresAt(LocalDateTime passwordResetOtpExpiresAt) {
+        this.passwordResetOtpExpiresAt = passwordResetOtpExpiresAt;
     }
 
     @Override
