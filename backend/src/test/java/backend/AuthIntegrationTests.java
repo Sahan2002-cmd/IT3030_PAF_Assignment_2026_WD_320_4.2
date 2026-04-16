@@ -1,0 +1,156 @@
+package backend;
+
+import backend.dto.LoginRequest;
+import backend.dto.ProfileUpdateRequest;
+import backend.dto.SignupRequest;
+import backend.repository.AppUserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class AuthIntegrationTests {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private AppUserRepository appUserRepository;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    void studentCanSignupAndLoginImmediately() throws Exception {
+        SignupRequest signupRequest = new SignupRequest(
+                "Student User",
+                "student1@campushub.com",
+                "Student@123",
+                "student"
+        );
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(signupRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("STUDENT"))
+                .andExpect(jsonPath("$.approved").value(true));
+
+        LoginRequest loginRequest = new LoginRequest("student1@campushub.com", "Student@123");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void technicianNeedsAdminApprovalBeforeLogin() throws Exception {
+        SignupRequest technicianSignup = new SignupRequest(
+                "Tech User",
+                "tech1@campushub.com",
+                "Tech@123",
+                "technician"
+        );
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(technicianSignup)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.approved").value(false));
+
+        LoginRequest technicianLogin = new LoginRequest("tech1@campushub.com", "Tech@123");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(technicianLogin)))
+                .andExpect(status().isForbidden());
+
+        String adminLoginResponse = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("admin@campushub.com", "Admin@123")
+                        )))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String adminToken = objectMapper.readTree(adminLoginResponse).get("token").asText();
+        Long technicianId = appUserRepository.findByEmailIgnoreCase("tech1@campushub.com").orElseThrow().getId();
+
+        mockMvc.perform(get("/api/admin/technicians/pending")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+
+        mockMvc.perform(patch("/api/admin/technicians/{technicianId}/approve", technicianId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.approved").value(true));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(technicianLogin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void authenticatedUserCanUpdateOwnProfile() throws Exception {
+        SignupRequest signupRequest = new SignupRequest(
+                "Profile User",
+                "profile1@campushub.com",
+                "Profile@123",
+                "student"
+        );
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(signupRequest)))
+                .andExpect(status().isOk());
+
+        String loginResponse = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("profile1@campushub.com", "Profile@123")
+                        )))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String token = objectMapper.readTree(loginResponse).get("token").asText();
+
+        mockMvc.perform(patch("/api/auth/me")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new ProfileUpdateRequest("Updated User", "profile-updated@campushub.com")
+                        )))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Updated User"))
+                .andExpect(jsonPath("$.email").value("profile-updated@campushub.com"))
+                .andExpect(jsonPath("$.token").isNotEmpty());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("profile-updated@campushub.com", "Profile@123")
+                        )))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+}
