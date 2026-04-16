@@ -16,11 +16,13 @@ import backend.repository.AppUserRepository;
 import backend.security.GoogleTokenVerifierService;
 import backend.security.JwtService;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Objects;
 import java.util.UUID;
-import org.springframework.http.HttpStatus;
+import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -30,7 +32,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
+
 import static backend.validation.AuthValidationRules.PASSWORD_MESSAGE;
+import static backend.validation.AuthValidationRules.isValidPassword;
 
 @Service
 public class AuthService {
@@ -40,6 +44,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final GoogleTokenVerifierService googleTokenVerifierService;
+    private final NotificationEmailService notificationEmailService;
     private final PasswordResetOtpNotifier passwordResetOtpNotifier;
 
     public AuthService(
@@ -48,6 +53,7 @@ public class AuthService {
             JwtService jwtService,
             PasswordEncoder passwordEncoder,
             GoogleTokenVerifierService googleTokenVerifierService,
+            NotificationEmailService notificationEmailService,
             PasswordResetOtpNotifier passwordResetOtpNotifier
     ) {
         this.appUserRepository = appUserRepository;
@@ -55,6 +61,7 @@ public class AuthService {
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
         this.googleTokenVerifierService = googleTokenVerifierService;
+        this.notificationEmailService = notificationEmailService;
         this.passwordResetOtpNotifier = passwordResetOtpNotifier;
     }
 
@@ -120,8 +127,7 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account is not active yet");
         }
 
-        String token = jwtService.generateToken(user);
-        return buildAuthResponse(user, token, "Login successful");
+        return buildAuthResponse(user, jwtService.generateToken(user), "Login successful");
     }
 
     @Transactional
@@ -212,6 +218,10 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New passwords do not match");
         }
 
+        if (!isValidPassword(request.newPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, PASSWORD_MESSAGE);
+        }
+
         if (user.getPasswordResetOtp() == null || user.getPasswordResetOtpExpiresAt() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP is invalid or expired");
         }
@@ -236,18 +246,39 @@ public class AuthService {
         AppUser user = appUserRepository.findById(authenticatedUser.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        String nextEmail = request.email().trim().toLowerCase();
+        String previousName = user.getName();
+        String previousEmail = user.getEmail();
+        String previousMobileNumber = user.getMobileNumber();
         String nextName = request.name().trim();
+        String nextEmail = request.email().trim().toLowerCase();
         String nextMobileNumber = request.mobileNumber().trim();
+        List<String> emailNotifications = new ArrayList<>();
 
         if (!user.getEmail().equalsIgnoreCase(nextEmail) && appUserRepository.existsByEmailIgnoreCase(nextEmail)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
         }
 
+        if (!previousName.equals(nextName)) {
+            emailNotifications.add("Your name was updated to " + nextName + ".");
+        }
+
+        if (!previousEmail.equalsIgnoreCase(nextEmail)) {
+            emailNotifications.add("Your email address was updated to " + nextEmail + ".");
+        }
+
+        if (!Objects.equals(previousMobileNumber, nextMobileNumber)) {
+            emailNotifications.add("Your mobile number was updated.");
+        }
+
         user.setName(nextName);
         user.setEmail(nextEmail);
         user.setMobileNumber(nextMobileNumber);
-        updatePasswordIfRequested(user, request);
+
+        if (updatePasswordIfRequested(user, request)) {
+            emailNotifications.add("Your password was changed.");
+        }
+
+        notificationEmailService.sendProfileChangeSummary(user, previousEmail, emailNotifications);
 
         return buildAuthResponse(
                 user,
@@ -280,6 +311,7 @@ public class AuthService {
         }
 
         user.setApproved(true);
+        notificationEmailService.sendTechnicianApproval(user);
 
         return new ApprovalResponse(
                 user.getId(),
@@ -329,14 +361,14 @@ public class AuthService {
         );
     }
 
-    private void updatePasswordIfRequested(AppUser user, ProfileUpdateRequest request) {
+    private boolean updatePasswordIfRequested(AppUser user, ProfileUpdateRequest request) {
         boolean wantsPasswordChange =
                 StringUtils.hasText(request.currentPassword())
                         || StringUtils.hasText(request.newPassword())
                         || StringUtils.hasText(request.confirmNewPassword());
 
         if (!wantsPasswordChange) {
-            return;
+            return false;
         }
 
         if (!StringUtils.hasText(request.currentPassword())) {
@@ -359,11 +391,12 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New passwords do not match");
         }
 
-        if (!backend.validation.AuthValidationRules.isValidPassword(request.newPassword())) {
+        if (!isValidPassword(request.newPassword())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, PASSWORD_MESSAGE);
         }
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
+        return true;
     }
 
     private String generateOtp() {

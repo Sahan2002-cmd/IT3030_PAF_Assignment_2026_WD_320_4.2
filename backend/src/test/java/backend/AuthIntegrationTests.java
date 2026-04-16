@@ -13,8 +13,9 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -278,7 +279,7 @@ class AuthIntegrationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(2))));
 
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/admin/users/{userId}", userId)
+        mockMvc.perform(delete("/api/admin/users/{userId}", userId)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("User deleted successfully."));
@@ -304,7 +305,7 @@ class AuthIntegrationTests {
         String adminToken = objectMapper.readTree(adminLoginResponse).get("token").asText();
         Long adminId = appUserRepository.findByEmailIgnoreCase("admin@campushub.com").orElseThrow().getId();
 
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/admin/users/{userId}", adminId)
+        mockMvc.perform(delete("/api/admin/users/{userId}", adminId)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isBadRequest());
     }

@@ -19,7 +19,6 @@ public final class AuthValidationRules {
     public static boolean isValidMobileNumber(String value) {
         return value != null && MOBILE_NUMBER_PATTERN.matcher(value).matches();
     }
-
     public static boolean isValidPassword(String value) {
         return value != null && PASSWORD_PATTERN.matcher(value).matches();
     }

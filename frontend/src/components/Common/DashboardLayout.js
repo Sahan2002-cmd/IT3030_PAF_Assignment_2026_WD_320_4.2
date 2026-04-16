@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { Bell } from "lucide-react";
 import ProfileModal from "./ProfileModal";
 
 function initialsForUser(user) {
@@ -17,19 +18,43 @@ function DashboardLayout({
   title,
   description,
   user,
+  notifications = [],
   onLogout,
+  onMarkNotificationsRead,
   onProfileUpdate,
   children,
   actions,
 }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const initials = initialsForUser(user);
+  const unreadCount = useMemo(
+    () => notifications.filter((notification) => !notification.read).length,
+    [notifications]
+  );
+
+  function formatNotificationTime(value) {
+    if (!value) {
+      return "";
+    }
+
+    return new Date(value).toLocaleString();
+  }
+
+  function handleToggleNotifications() {
+    const nextIsOpen = !isNotificationsOpen;
+    setIsNotificationsOpen(nextIsOpen);
+
+    if (nextIsOpen && unreadCount > 0 && onMarkNotificationsRead) {
+      onMarkNotificationsRead();
+    }
+  }
 
   return (
     <>
       <main className="min-h-screen px-4 py-8 sm:px-6">
         <section className="mx-auto w-full max-w-6xl">
-          <header className="rounded-[28px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] backdrop-blur sm:p-8">
+          <header className="relative z-20 overflow-visible rounded-[32px] border border-white/70 bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.10)] backdrop-blur sm:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
                 <p className="text-sm font-semibold uppercase tracking-[0.28em] text-accent">{eyebrow}</p>
@@ -53,6 +78,70 @@ function DashboardLayout({
 
               <div className="flex flex-wrap items-center gap-3 lg:justify-end">
                 {actions}
+                <div className="relative z-30">
+                  <button
+                    type="button"
+                    onClick={handleToggleNotifications}
+                    className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-sky-200 bg-white text-primary transition hover:border-sky-300 hover:bg-sky-50"
+                    title="Notifications"
+                    aria-label="Notifications"
+                  >
+                    <Bell size={18} />
+                    {unreadCount > 0 ? (
+                      <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    ) : null}
+                  </button>
+
+                  {isNotificationsOpen ? (
+                    <div className="absolute right-0 top-[calc(100%+12px)] z-50 w-[340px] rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Notifications</p>
+                          <h2 className="mt-1 text-lg font-bold text-primary">Recent activity</h2>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsNotificationsOpen(false)}
+                          className="text-sm font-semibold text-slate-500 transition hover:text-primary"
+                        >
+                          Close
+                        </button>
+                      </div>
+
+                      {notifications.length === 0 ? (
+                        <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-500">
+                          No notifications yet.
+                        </div>
+                      ) : (
+                        <div className="mt-4 grid max-h-80 gap-3 overflow-y-auto">
+                          {notifications.map((notification) => (
+                            <article
+                              key={notification.id}
+                              className={`rounded-2xl border p-4 ${
+                                notification.read
+                                  ? "border-slate-200 bg-slate-50/70"
+                                  : "border-sky-200 bg-sky-50/80"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <h3 className="text-sm font-bold text-primary">{notification.title}</h3>
+                                  <p className="mt-1 text-sm leading-6 text-slate-600">{notification.message}</p>
+                                </div>
+                                {!notification.read ? (
+                                  <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-sky-500" />
+                                ) : null}
+                              </div>
+                              <p className="mt-3 text-xs text-slate-400">{formatNotificationTime(notification.createdAt)}</p>
+                            </article>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
                 <button
                   type="button"
                   onClick={() => setIsProfileOpen(true)}
@@ -73,7 +162,7 @@ function DashboardLayout({
             </div>
           </header>
 
-          <section className="mt-6">{children}</section>
+          <section className="relative z-0 mt-6">{children}</section>
         </section>
       </main>
 

@@ -47,7 +47,6 @@ function ProfileModal({ isOpen, user, onClose, onSave }) {
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
-
     const trimmedMobileNumber = formData.mobileNumber.trim();
     const wantsPasswordChange =
       Boolean(formData.currentPassword) || Boolean(formData.newPassword) || Boolean(formData.confirmNewPassword);
@@ -107,7 +106,9 @@ function ProfileModal({ isOpen, user, onClose, onSave }) {
         aria-labelledby="profile-modal-title"
       >
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-accent">Profile</p>
-        <h2 id="profile-modal-title" className="mt-4 text-3xl font-extrabold text-primary">Account settings</h2>
+        <h2 id="profile-modal-title" className="mt-4 text-3xl font-extrabold text-primary">
+          Account settings
+        </h2>
         <p className="mt-3 text-base leading-7 text-slate-500">
           Update your account information and password.
         </p>

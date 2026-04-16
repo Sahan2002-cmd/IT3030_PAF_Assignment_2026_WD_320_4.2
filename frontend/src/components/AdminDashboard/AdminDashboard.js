@@ -2,7 +2,15 @@ import React, { useEffect, useState } from "react";
 import DashboardLayout from "../Common/DashboardLayout";
 import { approveTechnician, deleteUser, fetchAllUsers, fetchPendingTechnicians } from "../../services/api";
 
-function AdminDashboard({ user, token, onLogout, onRefreshUser, onProfileUpdate }) {
+function AdminDashboard({
+  user,
+  token,
+  notifications,
+  onLogout,
+  onRefreshUser,
+  onMarkNotificationsRead,
+  onProfileUpdate,
+}) {
   const [pendingTechnicians, setPendingTechnicians] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [isLoadingApprovals, setIsLoadingApprovals] = useState(true);
@@ -48,7 +56,7 @@ function AdminDashboard({ user, token, onLogout, onRefreshUser, onProfileUpdate 
     try {
       await Promise.all([loadPendingTechnicians(false), loadAllUsers(false)]);
     } catch {
-      // Individual loaders handle their own error messages.
+      // Individual loaders already surface their errors.
     }
   }
 
@@ -133,7 +141,9 @@ function AdminDashboard({ user, token, onLogout, onRefreshUser, onProfileUpdate 
       title="User management"
       description="Review user accounts, approve technicians, and remove accounts when needed."
       user={user}
+      notifications={notifications}
       onLogout={onLogout}
+      onMarkNotificationsRead={onMarkNotificationsRead}
       onProfileUpdate={onProfileUpdate}
       actions={
         <button
@@ -145,18 +155,16 @@ function AdminDashboard({ user, token, onLogout, onRefreshUser, onProfileUpdate 
         </button>
       }
     >
-      <section className="rounded-[28px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] backdrop-blur sm:p-8">
+      <section className="rounded-[32px] border border-white/70 bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] backdrop-blur sm:p-8">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <article className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Total users</p>
             <p className="mt-3 text-3xl font-extrabold text-primary">{allUsers.length}</p>
           </article>
-
           <article className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Pending approvals</p>
             <p className="mt-3 text-3xl font-extrabold text-primary">{pendingTechnicians.length}</p>
           </article>
-
           <article className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Administrators</p>
             <p className="mt-3 text-3xl font-extrabold text-primary">
@@ -165,13 +173,11 @@ function AdminDashboard({ user, token, onLogout, onRefreshUser, onProfileUpdate 
           </article>
         </div>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="mt-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Pending requests</p>
+        <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Pending requests</p>
             <h2 className="mt-3 text-3xl font-extrabold text-primary">{pendingTechnicians.length}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Accounts waiting for review
-            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">Accounts waiting for review</p>
           </div>
         </div>
 
@@ -264,9 +270,7 @@ function AdminDashboard({ user, token, onLogout, onRefreshUser, onProfileUpdate 
                     <div>
                       <h3 className="text-xl font-bold text-primary">{account.name}</h3>
                       <p className="mt-1 text-sm text-slate-500">{account.email}</p>
-                      {account.mobileNumber ? (
-                        <p className="mt-1 text-sm text-slate-500">{account.mobileNumber}</p>
-                      ) : null}
+                      {account.mobileNumber ? <p className="mt-1 text-sm text-slate-500">{account.mobileNumber}</p> : null}
 
                       <div className="mt-4 flex flex-wrap gap-2">
                         <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white">
