@@ -1,30 +1,178 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import Register from "./components/Register/Register";
+import "./App.css";
 import Login from "./components/Login/Login";
+import Register from "./components/Register/Register";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 import StudentDashboard from "./components/StudentDashboard/StudentDashboard";
 import TechnicianDashboard from "./components/TechnicianDashboard/TechnicianDashboard";
-import AdminResourceManagement from "./components/AdminDashboard/AdminResourceManagement";
-import AdminBookingManagement from "./components/AdminDashboard/AdminBookingManagement";
-
-import StudentResourceView from "./components/StudentDashboard/StudentResourceView";
+import ProtectedRoute from "./components/Common/ProtectedRoute";
+import LoadingScreen from "./components/Common/LoadingScreen";
+import { fetchCurrentUser } from "./services/api";
+import { clearSession, loadSession, routeForRole, storeSession, updateStoredUser } from "./utils/auth";
 
 function App() {
+  const [session, setSession] = useState(() => {
+    const storedSession = loadSession();
+
+    return {
+      status: storedSession.token ? "loading" : "anonymous",
+      token: storedSession.token,
+      user: storedSession.user,
+    };
+  });
+
+  useEffect(() => {
+    if (session.status !== "loading" || !session.token || session.user) {
+      return;
+    }
+
+    let isActive = true;
+
+    async function restoreFromToken() {
+      try {
+        const currentUser = await fetchCurrentUser(session.token);
+
+        if (!isActive) {
+          return;
+        }
+
+        const nextUser = {
+          id: currentUser.id,
+          name: currentUser.name,
+          email: currentUser.email,
+          role: currentUser.role,
+          approved: currentUser.approved,
+          createdAt: currentUser.createdAt,
+        };
+
+        updateStoredUser(nextUser);
+        setSession({
+          status: "authenticated",
+          token: session.token,
+          user: nextUser,
+        });
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
+        clearSession();
+        setSession({
+          status: "anonymous",
+          token: null,
+          user: null,
+        });
+      }
+    }
+
+    restoreFromToken();
+
+    return () => {
+      isActive = false;
+    };
+  }, [session.status, session.token, session.user]);
+
+  function handleLogin(authResponse) {
+    const nextSession = storeSession(authResponse);
+    setSession({
+      status: "authenticated",
+      token: nextSession.token,
+      user: nextSession.user,
+    });
+  }
+
+  function handleLogout() {
+    clearSession();
+    setSession({
+      status: "anonymous",
+      token: null,
+      user: null,
+    });
+  }
+
+  async function handleRefreshUser() {
+    if (!session.token) {
+      handleLogout();
+      return;
+    }
+
+    try {
+      const currentUser = await fetchCurrentUser(session.token);
+      const nextUser = {
+        id: currentUser.id,
+        name: currentUser.name,
+        email: currentUser.email,
+        role: currentUser.role,
+        approved: currentUser.approved,
+        createdAt: currentUser.createdAt,
+      };
+
+      updateStoredUser(nextUser);
+      setSession((current) => ({
+        ...current,
+        status: "authenticated",
+        user: nextUser,
+      }));
+    } catch {
+      handleLogout();
+    }
+  }
+
+  function renderHome() {
+    if (session.status === "loading") {
+      return <LoadingScreen />;
+    }
+
+    if (session.user?.role) {
+      return <Navigate to={routeForRole(session.user.role)} replace />;
+    }
+
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/student-dashboard" element={<StudentDashboard />} />
-        <Route path="/technician-dashboard" element={<TechnicianDashboard />} />
-        <Route path="/admin-resource-management" element={<AdminResourceManagement />} />
-        <Route path="/admin-booking-management" element={<AdminBookingManagement />} />
-        <Route path="/student-resource-view" element={<StudentResourceView />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={renderHome()} />
+          <Route
+            path="/login"
+            element={<Login session={session} onLogin={handleLogin} />}
+          />
+          <Route path="/register" element={<Register />} />
+          <Route
+            path="/admin-dashboard"
+            element={
+              <ProtectedRoute session={session} requiredRole="ADMIN">
+                <AdminDashboard
+                  user={session.user}
+                  token={session.token}
+                  onLogout={handleLogout}
+                  onRefreshUser={handleRefreshUser}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student-dashboard"
+            element={
+              <ProtectedRoute session={session} requiredRole="STUDENT">
+                <StudentDashboard user={session.user} onLogout={handleLogout} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/technician-dashboard"
+            element={
+              <ProtectedRoute session={session} requiredRole="TECHNICIAN">
+                <TechnicianDashboard user={session.user} onLogout={handleLogout} />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
     </BrowserRouter>
   );
 }
