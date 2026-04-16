@@ -54,6 +54,20 @@ export function loginWithGoogle(payload) {
   });
 }
 
+export function requestPasswordResetOtp(payload) {
+  return apiRequest("/api/auth/forgot-password", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export function resetPasswordWithOtp(payload) {
+  return apiRequest("/api/auth/reset-password", {
+    method: "POST",
+    body: payload,
+  });
+}
+
 export function fetchCurrentUser(token) {
   return apiRequest("/api/auth/me", { token });
 }
@@ -70,9 +84,20 @@ export function fetchPendingTechnicians(token) {
   return apiRequest("/api/admin/technicians/pending", { token });
 }
 
+export function fetchAllUsers(token) {
+  return apiRequest("/api/admin/users", { token });
+}
+
 export function approveTechnician(technicianId, token) {
   return apiRequest(`/api/admin/technicians/${technicianId}/approve`, {
     method: "PATCH",
+    token,
+  });
+}
+
+export function deleteUser(userId, token) {
+  return apiRequest(`/api/admin/users/${userId}`, {
+    method: "DELETE",
     token,
   });
 }

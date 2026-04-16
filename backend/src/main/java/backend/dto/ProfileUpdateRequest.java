@@ -2,12 +2,25 @@ package backend.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+
+import static backend.validation.AuthValidationRules.MOBILE_NUMBER_MESSAGE;
+import static backend.validation.AuthValidationRules.MOBILE_NUMBER_REGEX;
+import static backend.validation.AuthValidationRules.PASSWORD_MESSAGE;
+import static backend.validation.AuthValidationRules.PASSWORD_REGEX;
 
 public record ProfileUpdateRequest(
         @NotBlank(message = "Name is required")
         String name,
         @NotBlank(message = "Email is required")
         @Email(message = "Email must be valid")
-        String email
+        String email,
+        @NotBlank(message = "Mobile number is required")
+        @Pattern(regexp = MOBILE_NUMBER_REGEX, message = MOBILE_NUMBER_MESSAGE)
+        String mobileNumber,
+        String currentPassword,
+        @Pattern(regexp = PASSWORD_REGEX, message = PASSWORD_MESSAGE)
+        String newPassword,
+        String confirmNewPassword
 ) {
 }

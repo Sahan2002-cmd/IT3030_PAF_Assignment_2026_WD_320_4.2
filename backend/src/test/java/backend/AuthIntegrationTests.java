@@ -12,6 +12,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -37,6 +38,7 @@ class AuthIntegrationTests {
                 "Student User",
                 "student1@campushub.com",
                 "Student@123",
+                "0712345678",
                 "student"
         );
 
@@ -62,6 +64,7 @@ class AuthIntegrationTests {
                 "Tech User",
                 "tech1@campushub.com",
                 "Tech@123",
+                "0771234567",
                 "technician"
         );
 
@@ -114,6 +117,7 @@ class AuthIntegrationTests {
                 "Profile User",
                 "profile1@campushub.com",
                 "Profile@123",
+                "0761234567",
                 "student"
         );
 
@@ -138,19 +142,66 @@ class AuthIntegrationTests {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new ProfileUpdateRequest("Updated User", "profile-updated@campushub.com")
+                                new ProfileUpdateRequest(
+                                        "Updated User",
+                                        "profile-updated@campushub.com",
+                                        "0751234567",
+                                        "Profile@123",
+                                        "Updated@123",
+                                        "Updated@123"
+                                )
                         )))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Updated User"))
                 .andExpect(jsonPath("$.email").value("profile-updated@campushub.com"))
+                .andExpect(jsonPath("$.mobileNumber").value("0751234567"))
                 .andExpect(jsonPath("$.token").isNotEmpty());
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new LoginRequest("profile-updated@campushub.com", "Profile@123")
+                                new LoginRequest("profile-updated@campushub.com", "Updated@123")
                         )))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void adminCanViewAllUsersAndDeleteOtherUsers() throws Exception {
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new SignupRequest(
+                                        "Delete Me",
+                                        "delete-me@campushub.com",
+                                        "Delete@123",
+                                        "0701234567",
+                                        "student"
+                                )
+                        )))
+                .andExpect(status().isOk());
+
+        String adminLoginResponse = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("admin@campushub.com", "Admin@123")
+                        )))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String adminToken = objectMapper.readTree(adminLoginResponse).get("token").asText();
+        Long userId = appUserRepository.findByEmailIgnoreCase("delete-me@campushub.com").orElseThrow().getId();
+
+        mockMvc.perform(get("/api/admin/users")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(2))));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/admin/users/{userId}", userId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("User deleted successfully."));
     }
 }

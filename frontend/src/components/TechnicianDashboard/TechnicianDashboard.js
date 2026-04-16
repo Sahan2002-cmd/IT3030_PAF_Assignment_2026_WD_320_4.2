@@ -1,14 +1,16 @@
 import React from "react";
 import DashboardLayout from "../Common/DashboardLayout";
 
-function TechnicianDashboard({ user, onLogout, onProfileUpdate }) {
+function TechnicianDashboard({ user, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
   return (
     <DashboardLayout
       eyebrow="Technician"
       title="Technician dashboard"
       description="This page appears only after admin approval. If you can see it, your account has already cleared the approval step."
       user={user}
+      notifications={notifications}
       onLogout={onLogout}
+      onMarkNotificationsRead={onMarkNotificationsRead}
       onProfileUpdate={onProfileUpdate}
     >
       <section className="rounded-[32px] border border-white/70 bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] backdrop-blur sm:p-8">

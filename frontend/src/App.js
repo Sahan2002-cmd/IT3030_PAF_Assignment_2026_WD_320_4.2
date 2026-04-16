@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
 import Login from "./components/Login/Login";
@@ -10,17 +10,37 @@ import ProtectedRoute from "./components/Common/ProtectedRoute";
 import LoadingScreen from "./components/Common/LoadingScreen";
 import { fetchCurrentUser, updateOwnProfile } from "./services/api";
 import { clearSession, loadSession, routeForRole, storeSession, updateStoredUser } from "./utils/auth";
+import { addNotification, loadNotifications, markAllNotificationsRead } from "./utils/notifications";
 
 function App() {
   const [session, setSession] = useState(() => {
     const storedSession = loadSession();
 
     return {
-      status: storedSession.token ? "loading" : "anonymous",
+      status: storedSession.token
+        ? (storedSession.user ? "authenticated" : "loading")
+        : "anonymous",
       token: storedSession.token,
       user: storedSession.user,
     };
   });
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    if (!session.user?.id) {
+      setNotifications([]);
+      return;
+    }
+
+    setNotifications(loadNotifications(session.user.id));
+  }, [session.user?.id]);
+
+  const addUserNotification = useCallback((userId, notification) => {
+    const nextNotifications = addNotification(userId, notification);
+    if (session.user?.id === userId) {
+      setNotifications(nextNotifications);
+    }
+  }, [session.user?.id]);
 
   useEffect(() => {
     if (session.status !== "loading" || !session.token || session.user) {
@@ -41,10 +61,19 @@ function App() {
           id: currentUser.id,
           name: currentUser.name,
           email: currentUser.email,
+          mobileNumber: currentUser.mobileNumber,
           role: currentUser.role,
           approved: currentUser.approved,
           createdAt: currentUser.createdAt,
         };
+
+        if (nextUser.role === "TECHNICIAN" && nextUser.approved && !session.user?.approved) {
+          addUserNotification(nextUser.id, {
+            title: "Approval confirmed",
+            message: "Your technician account has been approved.",
+            type: "approval",
+          });
+        }
 
         updateStoredUser(nextUser);
         setSession({
@@ -71,7 +100,7 @@ function App() {
     return () => {
       isActive = false;
     };
-  }, [session.status, session.token, session.user]);
+  }, [addUserNotification, session.status, session.token, session.user]);
 
   function handleLogin(authResponse) {
     const nextSession = storeSession(authResponse);
@@ -107,10 +136,19 @@ function App() {
         id: currentUser.id,
         name: currentUser.name,
         email: currentUser.email,
+        mobileNumber: currentUser.mobileNumber,
         role: currentUser.role,
         approved: currentUser.approved,
         createdAt: currentUser.createdAt,
       };
+
+      if (nextUser.role === "TECHNICIAN" && nextUser.approved && !session.user?.approved) {
+        addUserNotification(nextUser.id, {
+          title: "Approval confirmed",
+          message: "Your technician account has been approved.",
+          type: "approval",
+        });
+      }
 
       updateStoredUser(nextUser);
       setSession((current) => ({
@@ -129,11 +167,46 @@ function App() {
       throw new Error("Your session has expired. Please sign in again.");
     }
 
+    const previousUser = session.user;
     const response = await updateOwnProfile(payload, session.token);
     const nextSession = storeSession(response);
 
     if (!nextSession.token || !nextSession.user) {
       throw new Error("Profile update did not return a valid session.");
+    }
+
+    if (previousUser?.id) {
+      if (payload.name?.trim() && payload.name.trim() !== previousUser.name) {
+        addUserNotification(previousUser.id, {
+          title: "Name updated",
+          message: `Your name was changed to ${payload.name.trim()}.`,
+          type: "profile",
+        });
+      }
+
+      if (payload.email?.trim().toLowerCase() && payload.email.trim().toLowerCase() !== previousUser.email) {
+        addUserNotification(previousUser.id, {
+          title: "Email updated",
+          message: `Your email was changed to ${payload.email.trim().toLowerCase()}.`,
+          type: "profile",
+        });
+      }
+
+      if (payload.mobileNumber?.trim() && payload.mobileNumber.trim() !== previousUser.mobileNumber) {
+        addUserNotification(previousUser.id, {
+          title: "Mobile number updated",
+          message: "Your mobile number was updated successfully.",
+          type: "profile",
+        });
+      }
+
+      if (payload.newPassword) {
+        addUserNotification(previousUser.id, {
+          title: "Password changed",
+          message: "Your password was changed successfully.",
+          type: "security",
+        });
+      }
     }
 
     setSession({
@@ -143,6 +216,14 @@ function App() {
     });
 
     return response;
+  }
+
+  function handleMarkNotificationsRead() {
+    if (!session.user?.id) {
+      return;
+    }
+
+    setNotifications(markAllNotificationsRead(session.user.id));
   }
 
   function renderHome() {
@@ -174,8 +255,10 @@ function App() {
                 <AdminDashboard
                   user={session.user}
                   token={session.token}
+                  notifications={notifications}
                   onLogout={handleLogout}
                   onRefreshUser={handleRefreshUser}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
                   onProfileUpdate={handleProfileUpdate}
                 />
               </ProtectedRoute>
@@ -187,7 +270,9 @@ function App() {
               <ProtectedRoute session={session} requiredRole="STUDENT">
                 <StudentDashboard
                   user={session.user}
+                  notifications={notifications}
                   onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
                   onProfileUpdate={handleProfileUpdate}
                 />
               </ProtectedRoute>
@@ -199,7 +284,9 @@ function App() {
               <ProtectedRoute session={session} requiredRole="TECHNICIAN">
                 <TechnicianDashboard
                   user={session.user}
+                  notifications={notifications}
                   onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
                   onProfileUpdate={handleProfileUpdate}
                 />
               </ProtectedRoute>

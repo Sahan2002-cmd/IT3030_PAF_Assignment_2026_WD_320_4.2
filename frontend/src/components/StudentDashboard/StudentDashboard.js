@@ -1,14 +1,16 @@
 import React from "react";
 import DashboardLayout from "../Common/DashboardLayout";
 
-function StudentDashboard({ user, onLogout, onProfileUpdate }) {
+function StudentDashboard({ user, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
   return (
     <DashboardLayout
       eyebrow="Student"
       title="Student dashboard"
       description="Your account is active and ready to use. Keep your profile up to date from the avatar button in the top-right corner."
       user={user}
+      notifications={notifications}
       onLogout={onLogout}
+      onMarkNotificationsRead={onMarkNotificationsRead}
       onProfileUpdate={onProfileUpdate}
     >
       <section className="rounded-[32px] border border-white/70 bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] backdrop-blur sm:p-8">
