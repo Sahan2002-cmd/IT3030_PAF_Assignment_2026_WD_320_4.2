@@ -16,7 +16,9 @@ function App() {
     const storedSession = loadSession();
 
     return {
-      status: storedSession.token ? "loading" : "anonymous",
+      status: storedSession.token
+        ? (storedSession.user ? "authenticated" : "loading")
+        : "anonymous",
       token: storedSession.token,
       user: storedSession.user,
     };

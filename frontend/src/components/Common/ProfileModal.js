@@ -107,11 +107,9 @@ function ProfileModal({ isOpen, user, onClose, onSave }) {
         aria-labelledby="profile-modal-title"
       >
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-accent">Profile</p>
-        <h2 id="profile-modal-title" className="mt-4 text-3xl font-extrabold text-primary">
-          Edit your details
-        </h2>
+        <h2 id="profile-modal-title" className="mt-4 text-3xl font-extrabold text-primary">Account settings</h2>
         <p className="mt-3 text-base leading-7 text-slate-500">
-          Update the details stored in your backend account. Changes apply to the current session immediately.
+          Update your account information and password.
         </p>
 
         <form className="mt-6 grid gap-5" onSubmit={handleSubmit}>
@@ -159,7 +157,7 @@ function ProfileModal({ isOpen, user, onClose, onSave }) {
           <div className="rounded-[28px] border border-slate-200 bg-slate-50/70 p-5">
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Change password</p>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Leave these fields empty if you want to keep your current password.
+              Leave these fields blank to keep your current password.
             </p>
 
             <div className="mt-4 grid gap-5">

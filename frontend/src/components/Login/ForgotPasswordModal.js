@@ -116,12 +116,12 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
       >
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-accent">Password reset</p>
         <h2 id="forgot-password-title" className="mt-4 text-3xl font-extrabold text-primary">
-          Forgot your password?
+          Reset password
         </h2>
         <p className="mt-3 text-base leading-7 text-slate-500">
           {step === "request"
-            ? "Enter your email and we will send a 6-digit OTP."
-            : "Enter the OTP from your email and choose a new password."}
+            ? "Enter your email to receive a one-time password."
+            : "Enter the OTP from your email and set a new password."}
         </p>
 
         <form className="mt-6 grid gap-5" onSubmit={step === "request" ? handleRequestOtp : handleResetPassword}>

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -262,6 +263,13 @@ public class AuthService {
                 .toList();
     }
 
+    public List<UserSummaryResponse> getAllUsers() {
+        return appUserRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
     @Transactional
     public ApprovalResponse approveTechnician(Long technicianId) {
         AppUser user = appUserRepository.findById(technicianId)
@@ -281,6 +289,19 @@ public class AuthService {
                 user.isApproved(),
                 "Technician approved successfully"
         );
+    }
+
+    @Transactional
+    public MessageResponse deleteUser(Long userId, AppUser adminUser) {
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (adminUser != null && user.getId().equals(adminUser.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot delete your own account");
+        }
+
+        appUserRepository.delete(user);
+        return new MessageResponse("User deleted successfully.");
     }
 
     private UserSummaryResponse toSummary(AppUser user) {

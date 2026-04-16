@@ -151,50 +151,18 @@ function Login({ session, onLogin }) {
 
   return (
     <main className="min-h-screen px-4 py-10 sm:px-6">
-      <section className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[1.02fr_0.98fr]">
-        <div className="hidden overflow-hidden rounded-[36px] border border-white/70 bg-gradient-to-br from-sky-900 via-blue-800 to-blue-600 p-10 text-white shadow-[0_28px_90px_rgba(37,99,235,0.20)] lg:block">
-          <p className="text-sm font-semibold uppercase tracking-[0.35em] text-sky-200">Campus Hub</p>
-          <h1 className="mt-6 max-w-md text-5xl font-extrabold leading-[1.02]">
-            One login for admin, student, and technician access
-          </h1>
-          <p className="mt-5 max-w-xl text-lg leading-8 text-blue-50/90">
-            Password login and Google OAuth now use the same backend session flow, so role routing and technician approval stay consistent.
-          </p>
-
-          <div className="mt-10 grid gap-4">
-            <div className="rounded-[28px] border border-white/15 bg-white/10 p-5 backdrop-blur">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-200">Admin</p>
-              <p className="mt-3 text-base leading-7 text-blue-50/90">
-                Reviews pending technicians and approves them directly from the dashboard.
-              </p>
-            </div>
-            <div className="rounded-[28px] border border-white/15 bg-white/10 p-5 backdrop-blur">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-200">Technician approval</p>
-              <p className="mt-3 text-base leading-7 text-blue-50/90">
-                Technician accounts can sign up or use Google, but backend access still waits for admin approval.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-auto rounded-[28px] border border-white/15 bg-white/10 p-6 backdrop-blur">
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-200">Default admin</p>
-            <p className="mt-3 text-base text-blue-50/90">admin@campushub.com</p>
-            <p className="mt-1 text-base text-blue-50/90">Admin@123</p>
-          </div>
-        </div>
-
-        <section className="rounded-[36px] border border-white/75 bg-white/88 p-6 shadow-[0_28px_90px_rgba(37,99,235,0.10)] backdrop-blur sm:p-8">
+      <section className="mx-auto w-full max-w-3xl rounded-[36px] border border-white/75 bg-white/90 p-6 shadow-[0_28px_90px_rgba(37,99,235,0.10)] backdrop-blur sm:p-8">
+        <div className="mx-auto max-w-2xl">
           <div className="mb-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.32em] text-accent lg:hidden">Campus Hub</p>
-            <h1 className="mt-4 text-4xl font-extrabold leading-tight text-primary">Login</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.32em] text-accent">Campus Hub</p>
+            <h1 className="mt-4 text-4xl font-extrabold leading-tight text-primary">Sign in</h1>
             <p className="mt-3 max-w-xl text-base leading-7 text-slate-500">
-              Sign in with email and password, or continue with Google OAuth 2.0.
+              Access your account with email and password or continue with Google.
             </p>
             <p className="mt-4 text-sm text-slate-500">
-              Need an account?
-              {" "}
+              Need an account?{" "}
               <Link to="/register" className="font-semibold text-accent transition hover:text-primary">
-                Create one
+                Create account
               </Link>
             </p>
           </div>
@@ -267,6 +235,13 @@ function Login({ session, onLogin }) {
           </div>
 
           <div className="rounded-[28px] border border-slate-200 bg-slate-50/70 p-5">
+            <div>
+              <h2 className="text-lg font-bold text-primary">Google sign-in</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Select the account type for first-time Google sign-in.
+              </p>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <button
                 type="button"
@@ -277,7 +252,7 @@ function Login({ session, onLogin }) {
                     : "border-slate-200 bg-white text-slate-500"
                 }`}
               >
-                Google as Student
+                Student
               </button>
               <button
                 type="button"
@@ -288,13 +263,9 @@ function Login({ session, onLogin }) {
                     : "border-slate-200 bg-white text-slate-500"
                 }`}
               >
-                Google as Technician
+                Technician
               </button>
             </div>
-
-            <p className="mt-4 text-sm leading-6 text-slate-500">
-              The selected role is used only for first-time Google sign-in. Existing accounts keep their saved role.
-            </p>
 
             <div className="mt-5 flex justify-center">
               <div id="google-signin-button" />
@@ -311,7 +282,7 @@ function Login({ session, onLogin }) {
               </p>
             ) : null}
           </div>
-        </section>
+        </div>
       </section>
 
       <ForgotPasswordModal
