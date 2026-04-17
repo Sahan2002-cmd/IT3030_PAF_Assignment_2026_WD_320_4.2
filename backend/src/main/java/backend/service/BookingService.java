@@ -9,6 +9,7 @@ import backend.model.BookingStatus;
 import backend.model.FacilityBooking;
 import backend.model.FacilityResource;
 import backend.model.ResourceStatus;
+import backend.model.ResourceType;
 import backend.model.Role;
 import backend.repository.FacilityBookingRepository;
 import backend.repository.FacilityResourceRepository;
@@ -208,8 +209,12 @@ public class BookingService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking time must stay within the resource time window");
         }
 
-        if (request.expectedAttendees() != null && request.expectedAttendees() > resource.getCapacity()) {
+        if (usesAttendeeCapacity(resource) && request.expectedAttendees() != null && request.expectedAttendees() > resource.getCapacity()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Expected attendees cannot exceed the resource capacity");
+        }
+
+        if (!usesAttendeeCapacity(resource) && request.expectedAttendees() != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Expected attendees are not needed for equipment bookings");
         }
     }
 
@@ -230,7 +235,7 @@ public class BookingService {
                 .map(this::normalizeAttendeeCount)
                 .reduce(0, Integer::sum);
 
-        int remainingCapacity = resource.getCapacity() - reservedAttendees;
+        int remainingCapacity = getEffectiveCapacity(resource) - reservedAttendees;
         if (requestedAttendees > remainingCapacity) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -243,6 +248,16 @@ public class BookingService {
 
     private int normalizeAttendeeCount(Integer expectedAttendees) {
         return expectedAttendees != null ? expectedAttendees : 1;
+    }
+
+    private int getEffectiveCapacity(FacilityResource resource) {
+        return usesAttendeeCapacity(resource) ? resource.getCapacity() : 1;
+    }
+
+    private boolean usesAttendeeCapacity(FacilityResource resource) {
+        return resource.getType() == ResourceType.LECTURE_HALL
+                || resource.getType() == ResourceType.LAB
+                || resource.getType() == ResourceType.MEETING_ROOM;
     }
 
     private void requireAdmin(AppUser user) {

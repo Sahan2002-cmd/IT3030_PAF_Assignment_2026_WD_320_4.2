@@ -20,6 +20,10 @@ const initialForm = {
 const inputClasses =
   "w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-base text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10";
 
+function usesAttendeeCapacity(resourceType) {
+  return resourceType === "LECTURE_HALL" || resourceType === "LAB" || resourceType === "MEETING_ROOM";
+}
+
 function formatTimeLabel(value) {
   if (!value) {
     return "";
@@ -79,6 +83,7 @@ function buildSlotSummaries(resource) {
   const endMinutes = toMinutes(resource.availableToTime);
   const dates = listDates(resource.availableFromDate, resource.availableToDate);
   const slots = [];
+  const effectiveCapacity = usesAttendeeCapacity(resource.type) ? (resource.capacity || 0) : 1;
 
   dates.forEach((date) => {
     for (let slotStart = startMinutes; slotStart < endMinutes; slotStart += 120) {
@@ -107,7 +112,7 @@ function buildSlotSummaries(resource) {
         endTime: fromMinutes(slotEnd),
         approvedBooked,
         pendingRequested,
-        remainingCapacity: Math.max((resource.capacity || 0) - approvedBooked, 0),
+        remainingCapacity: Math.max(effectiveCapacity - approvedBooked - pendingRequested, 0),
       });
     }
   });
@@ -199,6 +204,7 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
     setFormData((current) => ({
       ...current,
       [name]: value,
+      ...(name === "type" && !usesAttendeeCapacity(value) ? { capacity: "" } : {}),
     }));
   }
 
@@ -239,7 +245,7 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
     try {
       const payload = {
         ...formData,
-        capacity: Number(formData.capacity),
+        capacity: usesAttendeeCapacity(formData.type) ? Number(formData.capacity) : null,
       };
 
       const response = editingResourceId
@@ -345,7 +351,7 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
               required
             />
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className={`grid gap-4 ${usesAttendeeCapacity(formData.type) ? "sm:grid-cols-2" : ""}`}>
               <select
                 name="type"
                 value={formData.type}
@@ -360,16 +366,22 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
                 <option value="EQUIPMENT">Equipment</option>
               </select>
 
-              <input
-                type="number"
-                min="1"
-                name="capacity"
-                value={formData.capacity}
-                onChange={handleChange}
-                placeholder="Capacity"
-                className={inputClasses}
-                required
-              />
+              {usesAttendeeCapacity(formData.type) ? (
+                <input
+                  type="number"
+                  min="1"
+                  name="capacity"
+                  value={formData.capacity}
+                  onChange={handleChange}
+                  placeholder="Capacity"
+                  className={inputClasses}
+                  required
+                />
+              ) : (
+                <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-800">
+                  This resource type is booked as a single item, so attendee capacity is not needed.
+                </div>
+              )}
             </div>
 
             <input
@@ -597,7 +609,9 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
                         </span>
                       </div>
                     </div>
-                    <p className="mt-4 text-sm leading-6 text-slate-600">Capacity: {resource.capacity}</p>
+                    <p className="mt-4 text-sm leading-6 text-slate-600">
+                      {usesAttendeeCapacity(resource.type) ? `Capacity: ${resource.capacity}` : "Booking unit: Single equipment item"}
+                    </p>
                     <p className="mt-2 text-sm leading-6 text-slate-600">Availability: {formatAvailability(resource)}</p>
                     {resource.description ? (
                       <p className="mt-2 text-sm leading-6 text-slate-600">{resource.description}</p>
@@ -614,18 +628,20 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
                                   {formatDateLabel(slot.date)} • {formatTimeLabel(slot.startTime)} - {formatTimeLabel(slot.endTime)}
                                 </p>
                                 <p className="mt-1 text-xs text-slate-500">
-                                  Capacity left for this slot: {slot.remainingCapacity} / {resource.capacity}
+                                  {usesAttendeeCapacity(resource.type)
+                                    ? `Capacity left for this slot: ${slot.remainingCapacity} / ${resource.capacity}`
+                                    : `Availability left for this slot: ${slot.remainingCapacity} / 1`}
                                 </p>
                               </div>
                               <div className="flex flex-wrap gap-2">
                                 <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
-                                  Booked: {slot.approvedBooked}
+                                  {usesAttendeeCapacity(resource.type) ? `Booked: ${slot.approvedBooked}` : `Booked: ${slot.approvedBooked > 0 ? "Yes" : "No"}`}
                                 </span>
                                 <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                                  Pending: {slot.pendingRequested}
+                                  {usesAttendeeCapacity(resource.type) ? `Pending: ${slot.pendingRequested}` : `Pending: ${slot.pendingRequested > 0 ? "Yes" : "No"}`}
                                 </span>
                                 <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                  Left: {slot.remainingCapacity}
+                                  {usesAttendeeCapacity(resource.type) ? `Left: ${slot.remainingCapacity}` : `${slot.remainingCapacity > 0 ? "Available" : "Reserved"}`}
                                 </span>
                               </div>
                             </div>

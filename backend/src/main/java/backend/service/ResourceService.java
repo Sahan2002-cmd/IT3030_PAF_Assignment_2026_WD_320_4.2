@@ -79,7 +79,7 @@ public class ResourceService {
         String requestedLocation = StringUtils.hasText(location) ? location.trim().toLowerCase(Locale.ROOT) : null;
         List<FacilityResource> matchingResources = facilityResourceRepository.findAll().stream()
                 .filter(resource -> requestedType == null || resource.getType() == requestedType)
-                .filter(resource -> minCapacity == null || resource.getCapacity() >= minCapacity)
+                .filter(resource -> minCapacity == null || (resource.getCapacity() != null && resource.getCapacity() >= minCapacity))
                 .filter(resource -> requestedStatus == null || resource.getStatus() == requestedStatus)
                 .filter(resource -> requestedLocation == null
                         || resource.getLocation().toLowerCase(Locale.ROOT).contains(requestedLocation))
@@ -150,9 +150,11 @@ public class ResourceService {
     }
 
     private void applyResourceDetails(FacilityResource resource, CreateResourceRequest request) {
+        ResourceType resourceType = parseType(request.type());
+
         resource.setName(request.name().trim());
-        resource.setType(parseType(request.type()));
-        resource.setCapacity(request.capacity());
+        resource.setType(resourceType);
+        resource.setCapacity(normalizeCapacity(resourceType, request.capacity()));
         resource.setLocation(request.location().trim());
         validateAvailabilityWindow(request);
         resource.setAvailableFromDate(request.availableFromDate());
@@ -163,6 +165,24 @@ public class ResourceService {
         resource.setStatus(parseStatus(request.status()));
         resource.setDescription(StringUtils.hasText(request.description()) ? request.description().trim() : null);
         resource.setImageDataUrl(validateImageDataUrl(request.imageDataUrl()));
+    }
+
+    private Integer normalizeCapacity(ResourceType resourceType, Integer capacity) {
+        if (usesAttendeeCapacity(resourceType)) {
+            if (capacity == null || capacity < 1) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Capacity is required for this resource type");
+            }
+            return capacity;
+        }
+
+        return 1;
+    }
+
+    private boolean usesAttendeeCapacity(ResourceType resourceType) {
+        return switch (resourceType) {
+            case LECTURE_HALL, LAB, MEETING_ROOM -> true;
+            case PROJECTOR, CAMERA, EQUIPMENT -> false;
+        };
     }
 
     private void validateAvailabilityWindow(CreateResourceRequest request) {

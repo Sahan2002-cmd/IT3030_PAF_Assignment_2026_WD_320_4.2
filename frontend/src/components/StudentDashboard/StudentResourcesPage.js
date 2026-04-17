@@ -13,6 +13,10 @@ const initialFilters = {
 const inputClasses =
   "w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-base text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10";
 
+function usesAttendeeCapacity(resourceType) {
+  return resourceType === "LECTURE_HALL" || resourceType === "LAB" || resourceType === "MEETING_ROOM";
+}
+
 const emptyBookingForm = {
   bookingDate: "",
   startTime: "",
@@ -95,6 +99,7 @@ function buildSlotSummaries(resource) {
   const endMinutes = toMinutes(resource.availableToTime);
   const dates = listDates(resource.availableFromDate, resource.availableToDate);
   const slots = [];
+  const effectiveCapacity = usesAttendeeCapacity(resource.type) ? (resource.capacity || 0) : 1;
 
   dates.forEach((date) => {
     for (let slotStart = startMinutes; slotStart < endMinutes; slotStart += 120) {
@@ -123,7 +128,7 @@ function buildSlotSummaries(resource) {
         endTime: fromMinutes(slotEnd),
         approvedBooked,
         pendingRequested,
-        remainingCapacity: Math.max((resource.capacity || 0) - approvedBooked - pendingRequested, 0),
+        remainingCapacity: Math.max(effectiveCapacity - approvedBooked - pendingRequested, 0),
       });
     }
   });
@@ -418,7 +423,8 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                 const selectedDate = activeBookingResourceId === resource.id ? bookingForm.bookingDate : "";
                 const selectedDateSlots = buildSlotSummaries(resource).filter((slot) => slot.date === selectedDate);
                 const selectedSlot = selectedDateSlots.find((slot) => isSameSlot(bookingForm, slot));
-                const selectedSlotCapacity = selectedSlot?.remainingCapacity ?? resource.capacity ?? 1;
+                const selectedSlotCapacity = selectedSlot?.remainingCapacity ?? (usesAttendeeCapacity(resource.type) ? (resource.capacity ?? 1) : 1);
+                const showAttendeeField = usesAttendeeCapacity(resource.type);
 
                 return (
                 <article key={resource.id} className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
@@ -444,7 +450,11 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
 
                   <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     <div className="rounded-[16px] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
-                      Capacity: <span className="font-semibold text-primary">{resource.capacity}</span>
+                      {showAttendeeField ? (
+                        <>Capacity: <span className="font-semibold text-primary">{resource.capacity}</span></>
+                      ) : (
+                        <>Booking unit: <span className="font-semibold text-primary">Single equipment item</span></>
+                      )}
                     </div>
                     <div className="rounded-[16px] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 sm:col-span-2">
                       Availability: <span className="font-semibold text-primary">{formatAvailability(resource)}</span>
@@ -503,14 +513,16 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                         </p>
                       </div>
                       <textarea rows={3} value={bookingForm.purpose} onChange={(event) => setBookingForm((current) => ({ ...current, purpose: event.target.value }))} placeholder="Purpose of the booking" className={inputClasses} required />
-                      <input type="number" min="1" max={selectedSlotCapacity} value={bookingForm.expectedAttendees} onChange={(event) => handleExpectedAttendeesChange(event, selectedSlotCapacity)} placeholder="Expected attendees" className={inputClasses} />
-                      {selectedSlot ? (
+                      {showAttendeeField ? (
+                        <input type="number" min="1" max={selectedSlotCapacity} value={bookingForm.expectedAttendees} onChange={(event) => handleExpectedAttendeesChange(event, selectedSlotCapacity)} placeholder="Expected attendees" className={inputClasses} />
+                      ) : null}
+                      {selectedSlot && showAttendeeField ? (
                         <p className="text-xs font-medium text-slate-500">
                           You can request up to {selectedSlotCapacity} attendees for this slot. Pending and approved requests already reduce this number.
                         </p>
                       ) : null}
                       <div className="flex flex-wrap gap-2">
-                        <button type="submit" disabled={isSubmittingBooking || !bookingForm.bookingDate || !bookingForm.startTime || !bookingForm.endTime || Number(bookingForm.expectedAttendees || 0) > selectedSlotCapacity} className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-60">
+                        <button type="submit" disabled={isSubmittingBooking || !bookingForm.bookingDate || !bookingForm.startTime || !bookingForm.endTime || (showAttendeeField && Number(bookingForm.expectedAttendees || 0) > selectedSlotCapacity)} className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-60">
                           {isSubmittingBooking ? "Submitting..." : "Submit request"}
                         </button>
                         <button type="button" onClick={() => {
@@ -545,18 +557,20 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                                 {formatDateLabel(slot.date)} - {formatTimeLabel(slot.startTime)} to {formatTimeLabel(slot.endTime)}
                               </p>
                               <p className="mt-1 text-xs text-slate-500">
-                                Remaining capacity: {slot.remainingCapacity} / {resource.capacity}
+                                {showAttendeeField
+                                  ? `Remaining capacity: ${slot.remainingCapacity} / ${resource.capacity}`
+                                  : `Availability left: ${slot.remainingCapacity} / 1`}
                               </p>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
-                                Booked: {slot.approvedBooked}
+                                {showAttendeeField ? `Booked: ${slot.approvedBooked}` : `Booked: ${slot.approvedBooked > 0 ? "Yes" : "No"}`}
                               </span>
                               <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                                Pending: {slot.pendingRequested}
+                                {showAttendeeField ? `Pending: ${slot.pendingRequested}` : `Pending: ${slot.pendingRequested > 0 ? "Yes" : "No"}`}
                               </span>
                               <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                Left: {slot.remainingCapacity}
+                                {showAttendeeField ? `Left: ${slot.remainingCapacity}` : `${slot.remainingCapacity > 0 ? "Available" : "Reserved"}`}
                               </span>
                               <button
                                 type="button"

@@ -169,7 +169,7 @@ function AdminDashboard({
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 <Link to="/admin-tickets" className="inline-flex items-center justify-center gap-2 rounded-[22px] bg-white px-6 py-4 text-sm font-semibold text-primary transition hover:bg-sky-50">
-                  Ticket management
+                  Tickets
                   <ArrowRight size={16} />
                 </Link>
                 <button
