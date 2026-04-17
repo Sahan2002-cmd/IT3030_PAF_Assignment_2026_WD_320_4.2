@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowRight, Mail, Phone, ShieldCheck, Ticket, UserCircle2, Wrench } from "lucide-react";
+import { ArrowRight, FileText, Mail, Phone, ShieldCheck, Ticket, UserCircle2, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../Common/DashboardLayout";
 import { fetchAssignedTickets } from "../../services/api";
@@ -73,7 +73,7 @@ function TechnicianDashboard({ user, token, notifications, onLogout, onMarkNotif
                   Review your account details here, then move into the dedicated tickets page to update statuses, add notes, and keep students informed.
                 </p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <Link
                   to="/technician-tickets"
                   className="inline-flex items-center justify-center gap-2 rounded-[22px] bg-white px-6 py-4 text-sm font-semibold text-primary transition hover:bg-cyan-50"
@@ -88,6 +88,13 @@ function TechnicianDashboard({ user, token, notifications, onLogout, onMarkNotif
                 >
                   Refresh stats
                 </button>
+                <Link
+                  to="/technician-reports"
+                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/35 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15"
+                >
+                  <FileText size={16} />
+                  Reports
+                </Link>
               </div>
             </div>
           </section>
@@ -176,13 +183,22 @@ function TechnicianDashboard({ user, token, notifications, onLogout, onMarkNotif
                   Follow role-colored comments easily
                 </div>
               </div>
-              <Link
-                to="/technician-tickets"
-                className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-[24px] bg-primary px-6 py-4 text-sm font-semibold text-white transition hover:bg-sky-900"
-              >
-                Open tickets page
-                <ArrowRight size={16} />
-              </Link>
+              <div className="mt-8 grid gap-3">
+                <Link
+                  to="/technician-tickets"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-[24px] bg-primary px-6 py-4 text-sm font-semibold text-white transition hover:bg-sky-900"
+                >
+                  Open tickets page
+                  <ArrowRight size={16} />
+                </Link>
+                <Link
+                  to="/technician-reports"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-[24px] border border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
+                >
+                  <FileText size={16} />
+                  Open reports page
+                </Link>
+              </div>
             </article>
           </section>
         </div>

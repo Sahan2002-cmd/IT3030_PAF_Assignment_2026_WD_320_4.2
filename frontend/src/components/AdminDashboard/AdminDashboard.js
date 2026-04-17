@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ArrowRight, CheckCircle2, ShieldCheck, Ticket, UserCog, UserRoundCheck, Users } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileText, ShieldCheck, Ticket, UserCog, UserRoundCheck, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../Common/DashboardLayout";
 import {
@@ -167,7 +167,7 @@ function AdminDashboard({
                   This dashboard gives you a clean overview first, while each admin task opens into its own focused and easier-to-manage page.
                 </p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <Link to="/admin-tickets" className="inline-flex items-center justify-center gap-2 rounded-[22px] bg-white px-6 py-4 text-sm font-semibold text-primary transition hover:bg-sky-50">
                   Ticket management
                   <ArrowRight size={16} />
@@ -179,6 +179,10 @@ function AdminDashboard({
                 >
                   Refresh overview
                 </button>
+                <Link to="/admin-reports" className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15">
+                  <FileText size={16} />
+                  Reports
+                </Link>
               </div>
             </div>
           </section>
@@ -233,6 +237,16 @@ function AdminDashboard({
               <p className="mt-3 text-sm leading-7 text-slate-500">Keep technician approvals separate and easy to review so the admin queue stays calm and straightforward.</p>
               <Link to="/admin-approvals" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-primary">
                 Open approvals
+                <ArrowRight size={15} />
+              </Link>
+            </article>
+
+            <article className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><FileText size={20} /></div>
+              <h3 className="mt-5 text-2xl font-extrabold text-primary">Reports</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-500">Generate exports and summary reports for tickets, users, and the approval queue from one dedicated report center.</p>
+              <Link to="/admin-reports" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-primary">
+                Open reports
                 <ArrowRight size={15} />
               </Link>
             </article>
