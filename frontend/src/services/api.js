@@ -106,6 +106,37 @@ export function fetchMyTickets(token) {
   return apiRequest("/api/tickets/my", { token });
 }
 
+export function createResource(payload, token) {
+  return apiRequest("/api/admin/resources", {
+    method: "POST",
+    body: payload,
+    token,
+  });
+}
+
+export function fetchResources(filters = {}, token) {
+  const searchParams = new URLSearchParams();
+
+  if (filters.type) {
+    searchParams.set("type", filters.type);
+  }
+
+  if (filters.minCapacity) {
+    searchParams.set("minCapacity", String(filters.minCapacity));
+  }
+
+  if (filters.location) {
+    searchParams.set("location", filters.location);
+  }
+
+  if (filters.status) {
+    searchParams.set("status", filters.status);
+  }
+
+  const query = searchParams.toString();
+  return apiRequest(`/api/resources${query ? `?${query}` : ""}`, { token });
+}
+
 export function fetchAssignedTickets(token) {
   return apiRequest("/api/tickets/assigned", { token });
 }

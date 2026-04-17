@@ -6,9 +6,11 @@ import Register from "./components/Register/Register";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 import AdminApprovalsPage from "./components/AdminDashboard/AdminApprovalsPage";
 import AdminReportsPage from "./components/Reports/AdminReportsPage";
+import AdminResourcesPage from "./components/AdminDashboard/AdminResourcesPage";
 import AdminTicketsPage from "./components/AdminDashboard/AdminTicketsPage";
 import AdminUsersPage from "./components/AdminDashboard/AdminUsersPage";
 import StudentDashboard from "./components/StudentDashboard/StudentDashboard";
+import StudentResourcesPage from "./components/StudentDashboard/StudentResourcesPage";
 import StudentTicketsPage from "./components/StudentDashboard/StudentTicketsPage";
 import TechnicianReportsPage from "./components/Reports/TechnicianReportsPage";
 import TechnicianDashboard from "./components/TechnicianDashboard/TechnicianDashboard";
@@ -348,10 +350,40 @@ function App() {
             }
           />
           <Route
+            path="/admin-resources"
+            element={
+              <ProtectedRoute session={session} requiredRole="ADMIN">
+                <AdminResourcesPage
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/student-tickets"
             element={
               <ProtectedRoute session={session} requiredRole="STUDENT">
                 <StudentTicketsPage
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student-resources"
+            element={
+              <ProtectedRoute session={session} requiredRole="STUDENT">
+                <StudentResourcesPage
                   user={session.user}
                   token={session.token}
                   notifications={notifications}

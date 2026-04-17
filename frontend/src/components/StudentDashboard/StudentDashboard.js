@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowRight, IdCard, Mail, Phone, ShieldCheck, Sparkles, Ticket, UserCircle2 } from "lucide-react";
+import { ArrowRight, Boxes, IdCard, Mail, Phone, ShieldCheck, Sparkles, Ticket, UserCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../Common/DashboardLayout";
 import { fetchMyTickets } from "../../services/api";
@@ -40,13 +40,22 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
       onMarkNotificationsRead={onMarkNotificationsRead}
       onProfileUpdate={onProfileUpdate}
       actions={
-        <Link
-          to="/student-tickets"
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900"
-        >
-          <Ticket size={16} />
-          Tickets
-        </Link>
+        <>
+          <Link
+            to="/student-resources"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
+          >
+            <Boxes size={16} />
+            View resources
+          </Link>
+          <Link
+            to="/student-tickets"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900"
+          >
+            <Ticket size={16} />
+            Tickets
+          </Link>
+        </>
       }
     >
       {error ? (
@@ -84,6 +93,12 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
                 >
                   Open ticket center
                   <ArrowRight size={16} />
+                </Link>
+                <Link
+                  to="/student-resources"
+                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15"
+                >
+                  View resources
                 </Link>
                 <button
                   type="button"
@@ -192,6 +207,20 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
                     </div>
                   </div>
                 </article>
+
+                <article className="rounded-[24px] border border-slate-200 bg-slate-50/75 p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700">
+                      <Boxes size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-primary">Resource catalogue</h4>
+                      <p className="mt-2 text-sm leading-6 text-slate-500">
+                        Use the resource view to browse lecture halls, labs, meeting rooms, and equipment with filters for type, capacity, and location.
+                      </p>
+                    </div>
+                  </div>
+                </article>
               </div>
             </article>
 
@@ -226,6 +255,13 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
               >
                 Open tickets page
                 <ArrowRight size={16} />
+              </Link>
+
+              <Link
+                to="/student-resources"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[24px] border border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
+              >
+                View resource catalogue
               </Link>
             </article>
           </section>

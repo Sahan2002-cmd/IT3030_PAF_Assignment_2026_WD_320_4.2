@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ArrowRight, CheckCircle2, FileText, ShieldCheck, Ticket, UserCog, UserRoundCheck, Users } from "lucide-react";
+import { ArrowRight, Boxes, CheckCircle2, FileText, ShieldCheck, Ticket, UserCog, UserRoundCheck, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../Common/DashboardLayout";
 import {
@@ -183,6 +183,10 @@ function AdminDashboard({
                   <FileText size={16} />
                   Reports
                 </Link>
+                <Link to="/admin-resources" className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15">
+                  <Boxes size={16} />
+                  Resources
+                </Link>
               </div>
             </div>
           </section>
@@ -247,6 +251,16 @@ function AdminDashboard({
               <p className="mt-3 text-sm leading-7 text-slate-500">Generate exports and summary reports for tickets, users, and the approval queue from one dedicated report center.</p>
               <Link to="/admin-reports" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-primary">
                 Open reports
+                <ArrowRight size={15} />
+              </Link>
+            </article>
+
+            <article className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700"><Boxes size={20} /></div>
+              <h3 className="mt-5 text-2xl font-extrabold text-primary">Resource catalogue</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-500">Create and review lecture halls, labs, meeting rooms, and equipment for Module A from a dedicated management page.</p>
+              <Link to="/admin-resources" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-primary">
+                Open resource management
                 <ArrowRight size={15} />
               </Link>
             </article>
