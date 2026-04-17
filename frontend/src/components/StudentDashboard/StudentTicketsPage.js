@@ -4,7 +4,14 @@ import DashboardLayout from "../Common/DashboardLayout";
 import TicketWorkspace from "../Tickets/TicketWorkspace";
 import { fetchMyTickets } from "../../services/api";
 
-function StudentTicketsPage({ user, token, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
+function StudentTicketsPage({
+  user,
+  token,
+  notifications,
+  onLogout,
+  onMarkNotificationsRead,
+  onProfileUpdate,
+}) {
   const [dashboard, setDashboard] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");

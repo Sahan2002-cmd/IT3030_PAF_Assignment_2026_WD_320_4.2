@@ -21,9 +21,135 @@ import TechnicianDashboard from "./components/TechnicianDashboard/TechnicianDash
 import TechnicianTicketsPage from "./components/TechnicianDashboard/TechnicianTicketsPage";
 import ProtectedRoute from "./components/Common/ProtectedRoute";
 import LoadingScreen from "./components/Common/LoadingScreen";
-import { fetchCurrentUser, updateOwnProfile } from "./services/api";
+import {
+  fetchAllBookings,
+  fetchAllTickets,
+  fetchCurrentUser,
+  fetchMyBookings,
+  fetchMyTickets,
+  updateOwnProfile,
+} from "./services/api";
 import { clearSession, loadSession, storeSession, updateStoredUser } from "./utils/auth";
-import { addNotification, loadNotifications, markAllNotificationsRead } from "./utils/notifications";
+import {
+  addNotification,
+  loadNotificationSnapshot,
+  loadNotifications,
+  markAllNotificationsRead,
+  saveNotificationSnapshot,
+} from "./utils/notifications";
+
+const NOTIFICATION_SYNC_INTERVAL_MS = 30000;
+
+function ticketStatusLabel(status) {
+  switch (status) {
+    case "OPEN":
+      return "Open";
+    case "IN_PROGRESS":
+      return "In Progress";
+    case "RESOLVED":
+      return "Resolved";
+    case "CLOSED":
+      return "Closed";
+    case "REJECTED":
+      return "Rejected";
+    default:
+      return status;
+  }
+}
+
+function buildTicketNotification(ticket, previousStatus) {
+  switch (ticket.status) {
+    case "IN_PROGRESS":
+      return {
+        title: "Ticket in progress",
+        message: `${ticket.ticketNumber} is now in progress.`,
+      };
+    case "RESOLVED":
+      return {
+        title: "Ticket resolved",
+        message: `${ticket.ticketNumber} has been resolved.`,
+      };
+    case "CLOSED":
+      return {
+        title: "Ticket closed",
+        message: `${ticket.ticketNumber} has been closed.`,
+      };
+    case "REJECTED":
+      return {
+        title: "Ticket rejected",
+        message: `${ticket.ticketNumber} was rejected.`,
+      };
+    default:
+      return {
+        title: "Ticket updated",
+        message: `${ticket.ticketNumber} changed from ${ticketStatusLabel(previousStatus)} to ${ticketStatusLabel(ticket.status)}.`,
+      };
+  }
+}
+
+function bookingStatusLabel(status) {
+  switch (status) {
+    case "PENDING":
+      return "Pending";
+    case "APPROVED":
+      return "Approved";
+    case "REJECTED":
+      return "Rejected";
+    case "CANCELLED":
+      return "Cancelled";
+    default:
+      return status;
+  }
+}
+
+function formatBookingDate(value) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function buildBookingNotification(booking, previousStatus) {
+  const bookingDate = formatBookingDate(booking.bookingDate);
+
+  switch (booking.status) {
+    case "APPROVED":
+      return {
+        title: "Booking approved",
+        message: `Your booking for ${booking.resourceName} on ${bookingDate} was approved.`,
+      };
+    case "REJECTED":
+      return {
+        title: "Booking rejected",
+        message: `Your booking for ${booking.resourceName} on ${bookingDate} was rejected.`,
+      };
+    case "CANCELLED":
+      return {
+        title: "Booking cancelled",
+        message: `Your booking for ${booking.resourceName} on ${bookingDate} was cancelled.`,
+      };
+    default:
+      return {
+        title: "Booking updated",
+        message: `Your booking for ${booking.resourceName} changed from ${bookingStatusLabel(previousStatus)} to ${bookingStatusLabel(booking.status)}.`,
+      };
+  }
+}
+
+function buildAdminTicketNotification(ticket) {
+  return {
+    title: "New incident ticket",
+    message: `${ticket.ticketNumber} was submitted by ${ticket.createdByName}.`,
+  };
+}
+
+function buildAdminBookingNotification(booking) {
+  return {
+    title: "New booking request",
+    message: `${booking.requesterName} requested ${booking.resourceName} for ${formatBookingDate(booking.bookingDate)}.`,
+  };
+}
 
 function App() {
   const [session, setSession] = useState(() => {
@@ -54,6 +180,14 @@ function App() {
       setNotifications(nextNotifications);
     }
   }, [session.user?.id]);
+
+  const addCurrentUserNotification = useCallback((notification) => {
+    if (!session.user?.id) {
+      return;
+    }
+
+    addUserNotification(session.user.id, notification);
+  }, [addUserNotification, session.user?.id]);
 
   useEffect(() => {
     if (session.status !== "loading" || !session.token || session.user) {
@@ -112,6 +246,144 @@ function App() {
 
     return () => {
       isActive = false;
+    };
+  }, [addUserNotification, session.status, session.token, session.user]);
+
+  useEffect(() => {
+    if (
+      session.status !== "authenticated"
+      || !session.token
+      || !session.user?.id
+      || session.user.role !== "STUDENT"
+    ) {
+      return;
+    }
+
+    let isActive = true;
+
+    async function syncStudentNotifications() {
+      try {
+        const [ticketDashboard, bookings] = await Promise.all([
+          fetchMyTickets(session.token),
+          fetchMyBookings(session.token),
+        ]);
+
+        if (!isActive) {
+          return;
+        }
+
+        const previousTicketSnapshot = loadNotificationSnapshot(session.user.id, "student-tickets");
+        const nextTicketSnapshot = {};
+
+        (ticketDashboard?.tickets || []).forEach((ticket) => {
+          nextTicketSnapshot[ticket.id] = ticket.status;
+          const previousStatus = previousTicketSnapshot[ticket.id];
+
+          if (previousStatus && previousStatus !== ticket.status) {
+            addUserNotification(session.user.id, {
+              ...buildTicketNotification(ticket, previousStatus),
+              type: "ticket",
+            });
+          }
+        });
+
+        saveNotificationSnapshot(session.user.id, "student-tickets", nextTicketSnapshot);
+
+        const previousBookingSnapshot = loadNotificationSnapshot(session.user.id, "student-bookings");
+        const nextBookingSnapshot = {};
+
+        bookings.forEach((booking) => {
+          nextBookingSnapshot[booking.id] = booking.status;
+          const previousStatus = previousBookingSnapshot[booking.id];
+
+          if (previousStatus && previousStatus !== booking.status) {
+            addUserNotification(session.user.id, {
+              ...buildBookingNotification(booking, previousStatus),
+              type: "booking",
+            });
+          }
+        });
+
+        saveNotificationSnapshot(session.user.id, "student-bookings", nextBookingSnapshot);
+      } catch {
+        // Keep login flow resilient if the background notification sync fails.
+      }
+    }
+
+    syncStudentNotifications();
+    const intervalId = window.setInterval(syncStudentNotifications, NOTIFICATION_SYNC_INTERVAL_MS);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+    };
+  }, [addUserNotification, session.status, session.token, session.user]);
+
+  useEffect(() => {
+    if (
+      session.status !== "authenticated"
+      || !session.token
+      || !session.user?.id
+      || session.user.role !== "ADMIN"
+    ) {
+      return;
+    }
+
+    let isActive = true;
+
+    async function syncAdminNotifications() {
+      try {
+        const [ticketDashboard, bookings] = await Promise.all([
+          fetchAllTickets(session.token),
+          fetchAllBookings({}, session.token),
+        ]);
+
+        if (!isActive) {
+          return;
+        }
+
+        const previousTicketSnapshot = loadNotificationSnapshot(session.user.id, "admin-tickets");
+        const hasPreviousTicketSnapshot = Object.keys(previousTicketSnapshot).length > 0;
+        const nextTicketSnapshot = {};
+
+        (ticketDashboard?.tickets || []).forEach((ticket) => {
+          nextTicketSnapshot[ticket.id] = ticket.createdAt;
+          if (hasPreviousTicketSnapshot && !previousTicketSnapshot[ticket.id]) {
+            addUserNotification(session.user.id, {
+              ...buildAdminTicketNotification(ticket),
+              type: "ticket",
+            });
+          }
+        });
+
+        saveNotificationSnapshot(session.user.id, "admin-tickets", nextTicketSnapshot);
+
+        const previousBookingSnapshot = loadNotificationSnapshot(session.user.id, "admin-bookings");
+        const hasPreviousBookingSnapshot = Object.keys(previousBookingSnapshot).length > 0;
+        const nextBookingSnapshot = {};
+
+        bookings.forEach((booking) => {
+          nextBookingSnapshot[booking.id] = booking.createdAt;
+          if (hasPreviousBookingSnapshot && !previousBookingSnapshot[booking.id]) {
+            addUserNotification(session.user.id, {
+              ...buildAdminBookingNotification(booking),
+              type: "booking",
+            });
+          }
+        });
+
+        saveNotificationSnapshot(session.user.id, "admin-bookings", nextBookingSnapshot);
+      } catch {
+        // Keep login flow resilient if the background notification sync fails.
+      }
+    }
+
+    syncAdminNotifications();
+    const intervalId = window.setInterval(syncAdminNotifications, NOTIFICATION_SYNC_INTERVAL_MS);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
     };
   }, [addUserNotification, session.status, session.token, session.user]);
 
@@ -411,6 +683,7 @@ function App() {
                   onLogout={handleLogout}
                   onMarkNotificationsRead={handleMarkNotificationsRead}
                   onProfileUpdate={handleProfileUpdate}
+                  onAddNotification={addCurrentUserNotification}
                 />
               </ProtectedRoute>
             }

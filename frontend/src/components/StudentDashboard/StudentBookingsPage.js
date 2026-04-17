@@ -26,7 +26,14 @@ function formatDate(value) {
   });
 }
 
-function StudentBookingsPage({ user, token, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
+function StudentBookingsPage({
+  user,
+  token,
+  notifications,
+  onLogout,
+  onMarkNotificationsRead,
+  onProfileUpdate,
+}) {
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
