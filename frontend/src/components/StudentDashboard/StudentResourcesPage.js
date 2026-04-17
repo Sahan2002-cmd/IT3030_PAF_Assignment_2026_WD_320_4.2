@@ -66,13 +66,20 @@ function formatDateLabel(value) {
   });
 }
 
+function toDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function listDates(startDate, endDate) {
   const dates = [];
   const cursor = new Date(`${startDate}T00:00:00`);
   const end = new Date(`${endDate}T00:00:00`);
 
   while (cursor <= end) {
-    dates.push(cursor.toISOString().slice(0, 10));
+    dates.push(toDateInputValue(cursor));
     cursor.setDate(cursor.getDate() + 1);
   }
 
@@ -116,12 +123,33 @@ function buildSlotSummaries(resource) {
         endTime: fromMinutes(slotEnd),
         approvedBooked,
         pendingRequested,
-        remainingCapacity: Math.max((resource.capacity || 0) - approvedBooked, 0),
+        remainingCapacity: Math.max((resource.capacity || 0) - approvedBooked - pendingRequested, 0),
       });
     }
   });
 
   return slots;
+}
+
+function buildDateSummaries(resource) {
+  const groupedDates = new Map();
+
+  buildSlotSummaries(resource).forEach((slot) => {
+    const current = groupedDates.get(slot.date) || {
+      date: slot.date,
+      totalSlots: 0,
+      openSlots: 0,
+    };
+
+    current.totalSlots += 1;
+    if (slot.remainingCapacity > 0) {
+      current.openSlots += 1;
+    }
+
+    groupedDates.set(slot.date, current);
+  });
+
+  return Array.from(groupedDates.values());
 }
 
 function formatAvailability(resource) {
@@ -201,6 +229,25 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
     await loadResources(filters, false);
   }
 
+  function handleSelectDate(resourceId, date) {
+    setActiveBookingResourceId(resourceId);
+    setBookingForm((current) => ({
+      bookingDate: date,
+      startTime: "",
+      endTime: "",
+      purpose:
+        activeBookingResourceId === resourceId && current.bookingDate === date
+          ? current.purpose
+          : "",
+      expectedAttendees:
+        activeBookingResourceId === resourceId && current.bookingDate === date
+          ? current.expectedAttendees
+          : "",
+    }));
+    setError("");
+    setSuccessMessage("");
+  }
+
   function handleSelectSlot(resourceId, slot) {
     setActiveBookingResourceId(resourceId);
     setBookingForm((current) => ({
@@ -218,6 +265,24 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
     }));
     setError("");
     setSuccessMessage("");
+  }
+
+  function handleExpectedAttendeesChange(event, maxCapacity) {
+    const { value } = event.target;
+
+    if (!value) {
+      setBookingForm((current) => ({
+        ...current,
+        expectedAttendees: "",
+      }));
+      return;
+    }
+
+    const nextValue = Math.min(Math.max(Number(value), 1), Math.max(maxCapacity, 1));
+    setBookingForm((current) => ({
+      ...current,
+      expectedAttendees: String(nextValue),
+    }));
   }
 
   function bookingTone(status) {
@@ -363,7 +428,14 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                 No resources matched your filters.
               </div>
             ) : (
-              resources.map((resource) => (
+              resources.map((resource) => {
+                const dateSummaries = buildDateSummaries(resource);
+                const selectedDate = activeBookingResourceId === resource.id ? bookingForm.bookingDate : "";
+                const selectedDateSlots = buildSlotSummaries(resource).filter((slot) => slot.date === selectedDate);
+                const selectedSlot = selectedDateSlots.find((slot) => isSameSlot(bookingForm, slot));
+                const selectedSlotCapacity = selectedSlot?.remainingCapacity ?? resource.capacity ?? 1;
+
+                return (
                 <article key={resource.id} className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
                   {resource.imageDataUrl ? (
                     <img
@@ -400,11 +472,37 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
 
                   <div className="mt-5 flex flex-wrap gap-3">
                     <span className="inline-flex items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700">
-                      Choose a slot below to book
+                      Pick a date first, then choose a slot
                     </span>
                     <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
                       Max 3 hours per booking
                     </span>
+                  </div>
+
+                  <div className="mt-5">
+                    <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Available dates</p>
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      {dateSummaries.map((dateSummary) => {
+                        const isSelected = activeBookingResourceId === resource.id && bookingForm.bookingDate === dateSummary.date;
+                        return (
+                          <button
+                            key={`${resource.id}-${dateSummary.date}`}
+                            type="button"
+                            onClick={() => handleSelectDate(resource.id, dateSummary.date)}
+                            className={`rounded-2xl border px-4 py-3 text-left transition ${
+                              isSelected
+                                ? "border-primary bg-sky-100 text-primary shadow-[0_12px_32px_rgba(37,99,235,0.14)]"
+                                : "border-sky-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+                            }`}
+                          >
+                            <p className="text-sm font-semibold">{formatDateLabel(dateSummary.date)}</p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Open slots: {dateSummary.openSlots} / {dateSummary.totalSlots}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {activeBookingResourceId === resource.id ? (
@@ -414,13 +512,20 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                         <p className="mt-1">
                           {bookingForm.bookingDate && bookingForm.startTime && bookingForm.endTime
                             ? `${formatDateLabel(bookingForm.bookingDate)} - ${formatTimeLabel(bookingForm.startTime)} to ${formatTimeLabel(bookingForm.endTime)}`
-                            : "Choose one of the available slots below."}
+                            : bookingForm.bookingDate
+                              ? "Now choose one of the slots for this date."
+                              : "Choose one of the available dates below."}
                         </p>
                       </div>
                       <textarea rows={3} value={bookingForm.purpose} onChange={(event) => setBookingForm((current) => ({ ...current, purpose: event.target.value }))} placeholder="Purpose of the booking" className={inputClasses} required />
-                      <input type="number" min="1" value={bookingForm.expectedAttendees} onChange={(event) => setBookingForm((current) => ({ ...current, expectedAttendees: event.target.value }))} placeholder="Expected attendees" className={inputClasses} />
+                      <input type="number" min="1" max={selectedSlotCapacity} value={bookingForm.expectedAttendees} onChange={(event) => handleExpectedAttendeesChange(event, selectedSlotCapacity)} placeholder="Expected attendees" className={inputClasses} />
+                      {selectedSlot ? (
+                        <p className="text-xs font-medium text-slate-500">
+                          You can request up to {selectedSlotCapacity} attendees for this slot. Pending and approved requests already reduce this number.
+                        </p>
+                      ) : null}
                       <div className="flex flex-wrap gap-3">
-                        <button type="submit" disabled={isSubmittingBooking || !bookingForm.bookingDate || !bookingForm.startTime || !bookingForm.endTime} className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-60">
+                        <button type="submit" disabled={isSubmittingBooking || !bookingForm.bookingDate || !bookingForm.startTime || !bookingForm.endTime || Number(bookingForm.expectedAttendees || 0) > selectedSlotCapacity} className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-60">
                           {isSubmittingBooking ? "Submitting..." : "Submit request"}
                         </button>
                         <button type="button" onClick={() => {
@@ -458,7 +563,11 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                   <div className="mt-5">
                     <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Available time slots</p>
                     <div className="mt-3 grid gap-3">
-                      {buildSlotSummaries(resource).map((slot) => (
+                      {!selectedDate ? (
+                        <div className="rounded-[20px] border border-dashed border-sky-200 bg-white px-4 py-3 text-sm text-slate-500">
+                          Select a date first to see the available slots.
+                        </div>
+                      ) : selectedDateSlots.map((slot) => (
                         <div
                           key={`${resource.id}-${slot.date}-${slot.startTime}`}
                           className={`rounded-[20px] border px-4 py-3 transition ${
@@ -501,7 +610,8 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                     </div>
                   </div>
                 </article>
-              ))
+                );
+              })
             )}
           </div>
         )}

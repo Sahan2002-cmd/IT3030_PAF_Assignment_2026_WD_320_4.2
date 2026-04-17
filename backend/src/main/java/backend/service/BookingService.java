@@ -31,7 +31,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class BookingService {
 
-    private static final EnumSet<BookingStatus> CONFLICT_STATUSES = EnumSet.of(BookingStatus.PENDING, BookingStatus.APPROVED);
+    private static final EnumSet<BookingStatus> CAPACITY_BLOCKING_STATUSES = EnumSet.of(BookingStatus.PENDING, BookingStatus.APPROVED);
 
     private final FacilityBookingRepository facilityBookingRepository;
     private final FacilityResourceRepository facilityResourceRepository;
@@ -54,7 +54,8 @@ public class BookingService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found"));
 
         validateBookingRequest(request, resource);
-        ensureNoConflict(resource.getId(), request.bookingDate(), request.startTime(), request.endTime());
+        int requestedAttendees = normalizeAttendeeCount(request.expectedAttendees());
+        ensureCapacityAvailable(resource, request.bookingDate(), request.startTime(), request.endTime(), requestedAttendees, null);
 
         FacilityBooking booking = new FacilityBooking();
         booking.setResource(resource);
@@ -63,7 +64,7 @@ public class BookingService {
         booking.setStartTime(request.startTime());
         booking.setEndTime(request.endTime());
         booking.setPurpose(request.purpose().trim());
-        booking.setExpectedAttendees(request.expectedAttendees());
+        booking.setExpectedAttendees(requestedAttendees);
         booking.setStatus(BookingStatus.PENDING);
 
         FacilityBooking saved = facilityBookingRepository.save(booking);
@@ -109,7 +110,14 @@ public class BookingService {
         requireAdmin(user);
         FacilityBooking booking = findBooking(bookingId);
         ensurePending(booking);
-        ensureNoConflict(booking.getResource().getId(), booking.getBookingDate(), booking.getStartTime(), booking.getEndTime(), booking.getId());
+        ensureCapacityAvailable(
+                booking.getResource(),
+                booking.getBookingDate(),
+                booking.getStartTime(),
+                booking.getEndTime(),
+                normalizeAttendeeCount(booking.getExpectedAttendees()),
+                booking.getId()
+        );
         booking.setStatus(BookingStatus.APPROVED);
         booking.setAdminReason(normalizeReason(request));
         return toResponse(booking);
@@ -202,20 +210,36 @@ public class BookingService {
         }
     }
 
-    private void ensureNoConflict(Long resourceId, LocalDate bookingDate, LocalTime startTime, LocalTime endTime) {
-        ensureNoConflict(resourceId, bookingDate, startTime, endTime, null);
-    }
-
-    private void ensureNoConflict(Long resourceId, LocalDate bookingDate, LocalTime startTime, LocalTime endTime, Long ignoredBookingId) {
-        boolean conflictExists = facilityBookingRepository.findByResourceIdInOrderByBookingDateAscStartTimeAsc(List.of(resourceId)).stream()
+    private void ensureCapacityAvailable(
+            FacilityResource resource,
+            LocalDate bookingDate,
+            LocalTime startTime,
+            LocalTime endTime,
+            int requestedAttendees,
+            Long ignoredBookingId
+    ) {
+        int reservedAttendees = facilityBookingRepository.findByResourceIdInOrderByBookingDateAscStartTimeAsc(List.of(resource.getId())).stream()
                 .filter(booking -> ignoredBookingId == null || !booking.getId().equals(ignoredBookingId))
                 .filter(booking -> booking.getBookingDate().isEqual(bookingDate))
-                .filter(booking -> CONFLICT_STATUSES.contains(booking.getStatus()))
-                .anyMatch(booking -> startTime.isBefore(booking.getEndTime()) && endTime.isAfter(booking.getStartTime()));
+                .filter(booking -> CAPACITY_BLOCKING_STATUSES.contains(booking.getStatus()))
+                .filter(booking -> startTime.isBefore(booking.getEndTime()) && endTime.isAfter(booking.getStartTime()))
+                .map(FacilityBooking::getExpectedAttendees)
+                .map(this::normalizeAttendeeCount)
+                .reduce(0, Integer::sum);
 
-        if (conflictExists) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "This resource already has an overlapping booking");
+        int remainingCapacity = resource.getCapacity() - reservedAttendees;
+        if (requestedAttendees > remainingCapacity) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    remainingCapacity > 0
+                            ? "Only " + remainingCapacity + " capacity left for that time slot"
+                            : "No capacity left for that time slot"
+            );
         }
+    }
+
+    private int normalizeAttendeeCount(Integer expectedAttendees) {
+        return expectedAttendees != null ? expectedAttendees : 1;
     }
 
     private void requireAdmin(AppUser user) {
