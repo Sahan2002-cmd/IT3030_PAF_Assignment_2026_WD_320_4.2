@@ -1,6 +1,14 @@
 import React, { useMemo, useState } from "react";
 import { Bell } from "lucide-react";
+import { Link, NavLink } from "react-router-dom";
 import ProfileModal from "./ProfileModal";
+
+const navLinkClasses = ({ isActive }) =>
+  `rounded-full px-4 py-2 text-sm font-semibold transition ${
+    isActive
+      ? "bg-white text-slate-950 shadow-[0_12px_32px_rgba(255,255,255,0.16)]"
+      : "text-slate-200 hover:bg-white/10 hover:text-white"
+  }`;
 
 function initialsForUser(user) {
   const source = (user?.name || user?.email || "U").trim();
@@ -32,6 +40,7 @@ function DashboardLayout({
     () => notifications.filter((notification) => !notification.read).length,
     [notifications]
   );
+  const dashboardRoute = user?.role ? `/${user.role.toLowerCase()}-dashboard` : "/";
 
   function formatNotificationTime(value) {
     if (!value) {
@@ -52,24 +61,55 @@ function DashboardLayout({
 
   return (
     <>
-      <main className="min-h-screen px-4 py-8 sm:px-6">
+      <div className="min-h-screen">
+        <header className="sticky top-0 z-40 border-b border-sky-300/10 bg-[linear-gradient(135deg,rgba(2,6,23,0.94),rgba(15,23,42,0.96),rgba(30,41,59,0.92))] text-white backdrop-blur-xl">
+          <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+            <Link to="/" className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#38bdf8,#1d4ed8,#e0f2fe)] text-lg font-black text-slate-950 shadow-[0_16px_40px_rgba(56,189,248,0.24)]">
+                CH
+              </div>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-sky-300">Campus Hub</p>
+                <p className="text-sm font-semibold text-slate-300">Dashboard workspace</p>
+              </div>
+            </Link>
+
+            <nav className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 p-2 shadow-[0_14px_40px_rgba(15,23,42,0.24)] md:flex">
+              <NavLink to="/" end className={navLinkClasses}>Home</NavLink>
+              <NavLink to="/about" className={navLinkClasses}>About Us</NavLink>
+              <NavLink to="/student-resources" className={navLinkClasses}>Resources</NavLink>
+              <NavLink to={dashboardRoute} className={navLinkClasses}>Dashboard</NavLink>
+            </nav>
+
+            <div className="flex items-center gap-3">
+              <Link
+                to={dashboardRoute}
+                className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/10"
+              >
+                Dashboard
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <main className="px-4 py-8 sm:px-6">
         <section className="mx-auto w-full max-w-6xl">
-          <header className="relative z-20 overflow-visible rounded-[32px] border border-sky-200/90 bg-white/90 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.12)] backdrop-blur sm:p-8">
+          <header className="relative z-20 overflow-visible rounded-[32px] border border-sky-300/10 bg-[linear-gradient(135deg,rgba(2,6,23,0.96),rgba(15,23,42,0.96),rgba(30,64,175,0.84))] p-6 text-white shadow-[0_28px_80px_rgba(15,23,42,0.24)] backdrop-blur sm:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
-                <p className="text-sm font-semibold uppercase tracking-[0.28em] text-accent">{eyebrow}</p>
-                <h1 className="mt-3 text-3xl font-extrabold leading-tight text-primary sm:text-4xl">{title}</h1>
-                <p className="mt-3 max-w-2xl text-base leading-7 text-slate-500">{description}</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.28em] text-sky-300">{eyebrow}</p>
+                <h1 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">{title}</h1>
+                <p className="mt-3 max-w-2xl text-base leading-7 text-slate-200">{description}</p>
 
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <span className="rounded-full bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white">
+                  <span className="rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-950">
                     {user?.role}
                   </span>
-                  <span className="rounded-full border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-800">
+                  <span className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-slate-100">
                     {user?.email}
                   </span>
                   {user?.mobileNumber ? (
-                    <span className="rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">
+                    <span className="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-100">
                       {user.mobileNumber}
                     </span>
                   ) : null}
@@ -82,7 +122,7 @@ function DashboardLayout({
                   <button
                     type="button"
                     onClick={handleToggleNotifications}
-                    className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-sky-300 bg-white text-primary transition hover:border-sky-400 hover:bg-sky-50"
+                    className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/8 text-white transition hover:border-white/25 hover:bg-white/12"
                     title="Notifications"
                     aria-label="Notifications"
                   >
@@ -145,7 +185,7 @@ function DashboardLayout({
                 <button
                   type="button"
                   onClick={() => setIsProfileOpen(true)}
-                  className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-sky-300 bg-sky-50 text-sm font-bold text-primary transition hover:border-sky-400 hover:bg-sky-100"
+                  className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/10 text-sm font-bold text-white transition hover:border-white/25 hover:bg-white/14"
                   title="Edit profile"
                   aria-label="Edit profile"
                 >
@@ -154,7 +194,7 @@ function DashboardLayout({
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="inline-flex items-center justify-center rounded-2xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-400 hover:bg-sky-50"
+                  className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/8 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/12"
                 >
                   Logout
                 </button>
@@ -163,8 +203,30 @@ function DashboardLayout({
           </header>
 
           <section className="relative z-0 mt-6">{children}</section>
+
         </section>
-      </main>
+        </main>
+
+        <footer className="mt-8 border-t border-white/10 bg-[linear-gradient(180deg,rgba(2,6,23,0.98),rgba(15,23,42,0.98),rgba(30,41,59,0.98))] p-6 text-white shadow-[0_24px_60px_rgba(15,23,42,0.20)]">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-sky-300">Campus Hub</p>
+              <h2 className="mt-3 text-2xl font-black leading-tight text-white [font-family:Georgia,'Times_New_Roman',serif]">
+                Campus management with clearer resource booking and support workflows.
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-slate-300">
+                This workspace keeps bookings, resources, tickets, and account actions in one coordinated system.
+              </p>
+            </div>
+            <div className="grid gap-2 text-sm text-slate-300">
+              <p className="font-semibold uppercase tracking-[0.18em] text-slate-400">Quick Notes</p>
+              <p className="transition hover:text-white">Track campus resources and shared facilities</p>
+              <p className="transition hover:text-white">Review approvals and booking workflow clearly</p>
+              <p className="transition hover:text-white">Coordinate maintenance and support records</p>
+            </div>
+          </div>
+        </footer>
+      </div>
 
       <ProfileModal
         isOpen={isProfileOpen}

@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { loginUser, loginWithGoogle } from "../../services/api";
 import { routeForRole } from "../../utils/auth";
 import ForgotPasswordModal from "./ForgotPasswordModal";
+import PublicLayout from "../Public/PublicLayout";
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
@@ -150,8 +151,9 @@ function Login({ session, onLogin }) {
   }
 
   return (
-    <main className="min-h-screen px-4 py-10 sm:px-6">
-      <section className="mx-auto w-full max-w-3xl rounded-[36px] border border-white/75 bg-white/90 p-6 shadow-[0_28px_90px_rgba(37,99,235,0.10)] backdrop-blur sm:p-8">
+    <PublicLayout session={session}>
+      <main className="min-h-screen px-4 py-10 sm:px-6">
+        <section className="mx-auto w-full max-w-3xl rounded-[36px] border border-white/75 bg-white/90 p-6 shadow-[0_28px_90px_rgba(37,99,235,0.10)] backdrop-blur sm:p-8">
         <div className="mx-auto max-w-2xl">
           <div className="mb-8">
             <p className="text-sm font-semibold uppercase tracking-[0.32em] text-accent">Campus Hub</p>
@@ -283,18 +285,19 @@ function Login({ session, onLogin }) {
             ) : null}
           </div>
         </div>
-      </section>
+        </section>
 
-      <ForgotPasswordModal
-        isOpen={isForgotPasswordOpen}
-        defaultEmail={formData.email.trim().toLowerCase()}
-        onClose={() => setIsForgotPasswordOpen(false)}
-        onSuccess={(message) => {
-          setError("");
-          setSuccessMessage(message);
-        }}
-      />
-    </main>
+        <ForgotPasswordModal
+          isOpen={isForgotPasswordOpen}
+          defaultEmail={formData.email.trim().toLowerCase()}
+          onClose={() => setIsForgotPasswordOpen(false)}
+          onSuccess={(message) => {
+            setError("");
+            setSuccessMessage(message);
+          }}
+        />
+      </main>
+    </PublicLayout>
   );
 }
 
