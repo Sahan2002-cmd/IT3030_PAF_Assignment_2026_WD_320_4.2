@@ -1,6 +1,7 @@
 package backend.service;
 
 import backend.model.AppUser;
+import backend.model.FacilityBooking;
 import backend.model.IncidentTicket;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -122,6 +123,51 @@ public class NotificationEmailService {
         );
 
         sendEmail(recipients, "Campus Hub ticket status update", message);
+    }
+
+    public void sendBookingDecision(FacilityBooking booking, AppUser reviewedBy) {
+        if (booking == null || booking.getRequestedBy() == null) {
+            return;
+        }
+
+        LinkedHashSet<String> recipients = new LinkedHashSet<>();
+        addRecipient(recipients, booking.getRequestedBy().getEmail());
+
+        String reviewerName = reviewedBy != null ? reviewedBy.getName() : "Campus Hub";
+        String reasonSection = StringUtils.hasText(booking.getAdminReason())
+                ? "\nReason / note:\n" + booking.getAdminReason().trim() + "\n"
+                : "";
+
+        String message = """
+                Hello %s,
+
+                Your booking request has been reviewed in Campus Hub.
+
+                Resource: %s
+                Date: %s
+                Time: %s to %s
+                Status: %s
+                Reviewed by: %s
+                Purpose: %s
+                Expected attendees: %s
+                %s
+                Please sign in to Campus Hub if you want to review your bookings.
+
+                Campus Hub
+                """.formatted(
+                booking.getRequestedBy().getName(),
+                booking.getResource().getName(),
+                booking.getBookingDate(),
+                booking.getStartTime(),
+                booking.getEndTime(),
+                booking.getStatus().name(),
+                reviewerName,
+                booking.getPurpose(),
+                booking.getExpectedAttendees() != null ? booking.getExpectedAttendees() : "-",
+                reasonSection
+        );
+
+        sendEmail(recipients, "Campus Hub booking update", message);
     }
 
     private void addRecipient(Collection<String> recipients, String email) {

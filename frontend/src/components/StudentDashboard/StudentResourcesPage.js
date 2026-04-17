@@ -285,21 +285,6 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
     }));
   }
 
-  function bookingTone(status) {
-    switch (status) {
-      case "PENDING":
-        return "border-amber-300 bg-amber-50 text-amber-800";
-      case "APPROVED":
-        return "border-red-300 bg-red-50 text-red-700";
-      case "REJECTED":
-        return "border-slate-300 bg-slate-100 text-slate-700";
-      case "CANCELLED":
-        return "border-slate-300 bg-slate-100 text-slate-700";
-      default:
-        return "border-slate-300 bg-slate-100 text-slate-700";
-    }
-  }
-
   async function handleBookingSubmit(event, resourceId) {
     event.preventDefault();
     setIsSubmittingBooking(true);
@@ -422,7 +407,7 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
             Loading resources...
           </div>
         ) : (
-          <div className="mt-6 grid gap-4">
+          <div className="mt-6 grid gap-3">
             {resources.length === 0 ? (
               <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center text-slate-500">
                 No resources matched your filters.
@@ -436,18 +421,18 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                 const selectedSlotCapacity = selectedSlot?.remainingCapacity ?? resource.capacity ?? 1;
 
                 return (
-                <article key={resource.id} className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+                <article key={resource.id} className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
                   {resource.imageDataUrl ? (
                     <img
                       src={resource.imageDataUrl}
                       alt={resource.name}
-                      className="mb-5 h-56 w-full rounded-[24px] object-cover"
+                      className="mb-4 h-36 w-full rounded-[18px] object-cover"
                     />
                   ) : null}
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                      <h2 className="text-2xl font-extrabold text-primary">{resource.name}</h2>
-                      <p className="mt-2 text-sm text-slate-500">{resource.location}</p>
+                      <h2 className="text-xl font-extrabold text-primary">{resource.name}</h2>
+                      <p className="mt-1 text-sm text-slate-500">{resource.location}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white">{resource.type}</span>
@@ -457,21 +442,21 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                     </div>
                   </div>
 
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="rounded-[16px] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
                       Capacity: <span className="font-semibold text-primary">{resource.capacity}</span>
                     </div>
-                    <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 sm:col-span-2">
+                    <div className="rounded-[16px] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 sm:col-span-2">
                       Availability: <span className="font-semibold text-primary">{formatAvailability(resource)}</span>
                     </div>
                   </div>
 
                   {resource.description ? (
-                    <p className="mt-4 text-sm leading-7 text-slate-600">{resource.description}</p>
+                    <p className="mt-3 text-sm leading-6 text-slate-600">{resource.description}</p>
                   ) : null}
 
-                  <div className="mt-5 flex flex-wrap gap-3">
-                    <span className="inline-flex items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700">
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="inline-flex items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700">
                       Pick a date first, then choose a slot
                     </span>
                     <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
@@ -479,9 +464,9 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                     </span>
                   </div>
 
-                  <div className="mt-5">
+                  <div className="mt-4">
                     <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Available dates</p>
-                    <div className="mt-3 flex flex-wrap gap-3">
+                    <div className="mt-2 flex flex-wrap gap-2">
                       {dateSummaries.map((dateSummary) => {
                         const isSelected = activeBookingResourceId === resource.id && bookingForm.bookingDate === dateSummary.date;
                         return (
@@ -489,7 +474,7 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                             key={`${resource.id}-${dateSummary.date}`}
                             type="button"
                             onClick={() => handleSelectDate(resource.id, dateSummary.date)}
-                            className={`rounded-2xl border px-4 py-3 text-left transition ${
+                            className={`rounded-2xl border px-3 py-2 text-left transition ${
                               isSelected
                                 ? "border-primary bg-sky-100 text-primary shadow-[0_12px_32px_rgba(37,99,235,0.14)]"
                                 : "border-sky-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
@@ -506,8 +491,8 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                   </div>
 
                   {activeBookingResourceId === resource.id ? (
-                    <form className="mt-5 grid gap-4 rounded-[24px] border border-sky-200 bg-white p-5" onSubmit={(event) => handleBookingSubmit(event, resource.id)}>
-                      <div className="rounded-[20px] border border-sky-200 bg-sky-50/70 px-4 py-3 text-sm text-sky-900">
+                    <form className="mt-4 grid gap-3 rounded-[20px] border border-sky-200 bg-white p-4" onSubmit={(event) => handleBookingSubmit(event, resource.id)}>
+                      <div className="rounded-[16px] border border-sky-200 bg-sky-50/70 px-3 py-3 text-sm text-sky-900">
                         <p className="font-semibold">Selected slot</p>
                         <p className="mt-1">
                           {bookingForm.bookingDate && bookingForm.startTime && bookingForm.endTime
@@ -524,53 +509,31 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                           You can request up to {selectedSlotCapacity} attendees for this slot. Pending and approved requests already reduce this number.
                         </p>
                       ) : null}
-                      <div className="flex flex-wrap gap-3">
-                        <button type="submit" disabled={isSubmittingBooking || !bookingForm.bookingDate || !bookingForm.startTime || !bookingForm.endTime || Number(bookingForm.expectedAttendees || 0) > selectedSlotCapacity} className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-60">
+                      <div className="flex flex-wrap gap-2">
+                        <button type="submit" disabled={isSubmittingBooking || !bookingForm.bookingDate || !bookingForm.startTime || !bookingForm.endTime || Number(bookingForm.expectedAttendees || 0) > selectedSlotCapacity} className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-60">
                           {isSubmittingBooking ? "Submitting..." : "Submit request"}
                         </button>
                         <button type="button" onClick={() => {
                           setActiveBookingResourceId(null);
                           setBookingForm(emptyBookingForm);
-                        }} className="inline-flex items-center justify-center rounded-2xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-400 hover:bg-sky-50">
+                        }} className="inline-flex items-center justify-center rounded-2xl border border-sky-300 bg-white px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-sky-400 hover:bg-sky-50">
                           Cancel
                         </button>
                       </div>
                     </form>
                   ) : null}
 
-                  <div className="mt-5">
-                    <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Booking timeline</p>
-                    <div className="mt-3 grid gap-3">
-                      {resource.bookings?.length ? (
-                        resource.bookings.map((booking) => (
-                          <div key={booking.id} className={`rounded-[20px] border px-4 py-3 text-sm ${bookingTone(booking.status)}`}>
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <span className="font-semibold">{booking.status}</span>
-                              <span>{booking.bookingDate} - {booking.startTime} to {booking.endTime}</span>
-                            </div>
-                            <p className="mt-2">{booking.requesterName}: {booking.purpose}</p>
-                            {booking.adminReason ? <p className="mt-1 text-xs opacity-80">Reason: {booking.adminReason}</p> : null}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="rounded-[20px] border border-dashed border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
-                          No bookings yet for this resource.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-5">
+                  <div className="mt-4">
                     <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Available time slots</p>
-                    <div className="mt-3 grid gap-3">
+                    <div className="mt-2 grid gap-2">
                       {!selectedDate ? (
-                        <div className="rounded-[20px] border border-dashed border-sky-200 bg-white px-4 py-3 text-sm text-slate-500">
+                        <div className="rounded-[16px] border border-dashed border-sky-200 bg-white px-3 py-3 text-sm text-slate-500">
                           Select a date first to see the available slots.
                         </div>
                       ) : selectedDateSlots.map((slot) => (
                         <div
                           key={`${resource.id}-${slot.date}-${slot.startTime}`}
-                          className={`rounded-[20px] border px-4 py-3 transition ${
+                          className={`rounded-[16px] border px-3 py-3 transition ${
                             activeBookingResourceId === resource.id && isSameSlot(bookingForm, slot)
                               ? "border-primary bg-sky-100 shadow-[0_12px_32px_rgba(37,99,235,0.14)]"
                               : "border-sky-200 bg-white"
@@ -599,7 +562,7 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                                 type="button"
                                 disabled={resource.status !== "ACTIVE" || slot.remainingCapacity <= 0}
                                 onClick={() => handleSelectSlot(resource.id, slot)}
-                                className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-900 disabled:cursor-not-allowed disabled:bg-slate-300"
+                                className="inline-flex items-center justify-center rounded-full bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-900 disabled:cursor-not-allowed disabled:bg-slate-300"
                               >
                                 {resource.status !== "ACTIVE" ? "Unavailable" : slot.remainingCapacity <= 0 ? "Full" : "Book this slot"}
                               </button>

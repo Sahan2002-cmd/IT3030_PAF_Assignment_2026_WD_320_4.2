@@ -4,7 +4,6 @@ import backend.dto.BookingDecisionRequest;
 import backend.dto.BookingResponse;
 import backend.dto.BookingSummaryResponse;
 import backend.dto.CreateBookingRequest;
-import backend.dto.MessageResponse;
 import backend.model.AppUser;
 import backend.model.BookingStatus;
 import backend.model.FacilityBooking;
@@ -20,7 +19,6 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -35,13 +33,16 @@ public class BookingService {
 
     private final FacilityBookingRepository facilityBookingRepository;
     private final FacilityResourceRepository facilityResourceRepository;
+    private final NotificationEmailService notificationEmailService;
 
     public BookingService(
             FacilityBookingRepository facilityBookingRepository,
-            FacilityResourceRepository facilityResourceRepository
+            FacilityResourceRepository facilityResourceRepository,
+            NotificationEmailService notificationEmailService
     ) {
         this.facilityBookingRepository = facilityBookingRepository;
         this.facilityResourceRepository = facilityResourceRepository;
+        this.notificationEmailService = notificationEmailService;
     }
 
     @Transactional
@@ -120,6 +121,7 @@ public class BookingService {
         );
         booking.setStatus(BookingStatus.APPROVED);
         booking.setAdminReason(normalizeReason(request));
+        notificationEmailService.sendBookingDecision(booking, user);
         return toResponse(booking);
     }
 
@@ -135,6 +137,7 @@ public class BookingService {
 
         booking.setStatus(BookingStatus.REJECTED);
         booking.setAdminReason(request.reason().trim());
+        notificationEmailService.sendBookingDecision(booking, user);
         return toResponse(booking);
     }
 
