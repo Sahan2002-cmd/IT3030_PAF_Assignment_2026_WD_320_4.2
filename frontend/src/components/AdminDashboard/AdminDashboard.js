@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ArrowRight, Boxes, CheckCircle2, FileText, ShieldCheck, Ticket, UserCog, UserRoundCheck, Users } from "lucide-react";
+import { ArrowRight, Boxes, CalendarDays, CheckCircle2, FileText, ShieldCheck, Ticket, UserCog, UserRoundCheck, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../Common/DashboardLayout";
 import {
@@ -187,6 +187,10 @@ function AdminDashboard({
                   <Boxes size={16} />
                   Resources
                 </Link>
+                <Link to="/admin-bookings" className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-sky-100/70 bg-white/12 px-6 py-4 text-sm font-semibold text-white transition hover:border-white/90 hover:bg-white/18">
+                  <CalendarDays size={16} />
+                  Bookings
+                </Link>
               </div>
             </div>
           </section>
@@ -261,6 +265,16 @@ function AdminDashboard({
               <p className="mt-3 text-sm leading-7 text-slate-500">Create and review lecture halls, labs, meeting rooms, and equipment for Module A from a dedicated management page.</p>
               <Link to="/admin-resources" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-primary">
                 Open resource management
+                <ArrowRight size={15} />
+              </Link>
+            </article>
+
+            <article className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-700"><CalendarDays size={20} /></div>
+              <h3 className="mt-5 text-2xl font-extrabold text-primary">Booking requests</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-500">Review pending resource requests, approve or reject them with reasons, and monitor the full booking workflow.</p>
+              <Link to="/admin-bookings" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-primary">
+                Open booking management
                 <ArrowRight size={15} />
               </Link>
             </article>

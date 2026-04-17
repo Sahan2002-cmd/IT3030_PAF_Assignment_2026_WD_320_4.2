@@ -3,6 +3,7 @@ package backend.dto;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 public record ResourceResponse(
         Long id,
@@ -18,6 +19,7 @@ public record ResourceResponse(
         String status,
         String description,
         String imageDataUrl,
+        List<BookingSummaryResponse> bookings,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

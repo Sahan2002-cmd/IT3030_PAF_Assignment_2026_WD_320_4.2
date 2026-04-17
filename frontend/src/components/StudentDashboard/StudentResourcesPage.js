@@ -1,13 +1,24 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../Common/DashboardLayout";
-import { fetchResources } from "../../services/api";
+import { createBooking, fetchResources } from "../../services/api";
 
 const initialFilters = {
   type: "",
   minCapacity: "",
   location: "",
   status: "",
+};
+
+const inputClasses =
+  "w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-base text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10";
+
+const emptyBookingForm = {
+  bookingDate: "",
+  startTime: "",
+  endTime: "",
+  purpose: "",
+  expectedAttendees: "",
 };
 
 function formatAvailability(resource) {
@@ -40,8 +51,12 @@ function formatAvailability(resource) {
 function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
   const [filters, setFilters] = useState(initialFilters);
   const [resources, setResources] = useState([]);
+  const [activeBookingResourceId, setActiveBookingResourceId] = useState(null);
+  const [bookingForm, setBookingForm] = useState(emptyBookingForm);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const loadResources = useCallback(async (nextFilters = filters, showLoading = true) => {
     if (showLoading) {
@@ -58,6 +73,7 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
       );
       setResources(data);
       setError("");
+      setSuccessMessage("");
     } catch (loadError) {
       setError(loadError.message || "Failed to load resources.");
     } finally {
@@ -82,6 +98,50 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
     await loadResources(filters, false);
   }
 
+  function bookingTone(status) {
+    switch (status) {
+      case "PENDING":
+        return "border-amber-300 bg-amber-50 text-amber-800";
+      case "APPROVED":
+        return "border-red-300 bg-red-50 text-red-700";
+      case "REJECTED":
+        return "border-slate-300 bg-slate-100 text-slate-700";
+      case "CANCELLED":
+        return "border-slate-300 bg-slate-100 text-slate-700";
+      default:
+        return "border-slate-300 bg-slate-100 text-slate-700";
+    }
+  }
+
+  async function handleBookingSubmit(event, resourceId) {
+    event.preventDefault();
+    setIsSubmittingBooking(true);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      await createBooking(
+        {
+          resourceId,
+          bookingDate: bookingForm.bookingDate,
+          startTime: bookingForm.startTime,
+          endTime: bookingForm.endTime,
+          purpose: bookingForm.purpose,
+          expectedAttendees: bookingForm.expectedAttendees ? Number(bookingForm.expectedAttendees) : null,
+        },
+        token
+      );
+      setSuccessMessage("Booking request submitted. Pending requests show in yellow and approved bookings show in red.");
+      setBookingForm(emptyBookingForm);
+      setActiveBookingResourceId(null);
+      await loadResources(filters, false);
+    } catch (submitError) {
+      setError(submitError.message || "Failed to create booking.");
+    } finally {
+      setIsSubmittingBooking(false);
+    }
+  }
+
   return (
     <DashboardLayout
       eyebrow="Student"
@@ -93,15 +153,23 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
       onMarkNotificationsRead={onMarkNotificationsRead}
       onProfileUpdate={onProfileUpdate}
       actions={
-        <Link
-          to="/student-dashboard"
-          className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
-        >
-          Back to dashboard
-        </Link>
+        <>
+          <Link
+            to="/student-bookings"
+            className="inline-flex items-center justify-center rounded-2xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-400 hover:bg-sky-50"
+          >
+            My bookings
+          </Link>
+          <Link
+            to="/student-dashboard"
+            className="inline-flex items-center justify-center rounded-2xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-400 hover:bg-sky-50"
+          >
+            Back to dashboard
+          </Link>
+        </>
       }
     >
-      <section className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
+      <section className="rounded-[32px] border border-sky-200/90 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
         <form className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]" onSubmit={handleSubmit}>
           <select
             name="type"
@@ -158,6 +226,9 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
         {error ? (
           <p className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
         ) : null}
+        {successMessage ? (
+          <p className="mt-4 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-700">{successMessage}</p>
+        ) : null}
 
         {isLoading ? (
           <div className="mt-6 rounded-[24px] border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center text-slate-500">
@@ -204,6 +275,66 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                   {resource.description ? (
                     <p className="mt-4 text-sm leading-7 text-slate-600">{resource.description}</p>
                   ) : null}
+
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveBookingResourceId(resource.id);
+                        setBookingForm(emptyBookingForm);
+                        setError("");
+                        setSuccessMessage("");
+                      }}
+                      className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-900"
+                    >
+                      Request booking
+                    </button>
+                    <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+                      Max 3 hours per booking
+                    </span>
+                  </div>
+
+                  {activeBookingResourceId === resource.id ? (
+                    <form className="mt-5 grid gap-4 rounded-[24px] border border-sky-200 bg-white p-5" onSubmit={(event) => handleBookingSubmit(event, resource.id)}>
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <input type="date" value={bookingForm.bookingDate} onChange={(event) => setBookingForm((current) => ({ ...current, bookingDate: event.target.value }))} className={inputClasses} required />
+                        <input type="time" value={bookingForm.startTime} onChange={(event) => setBookingForm((current) => ({ ...current, startTime: event.target.value }))} className={inputClasses} required />
+                        <input type="time" value={bookingForm.endTime} onChange={(event) => setBookingForm((current) => ({ ...current, endTime: event.target.value }))} className={inputClasses} required />
+                      </div>
+                      <textarea rows={3} value={bookingForm.purpose} onChange={(event) => setBookingForm((current) => ({ ...current, purpose: event.target.value }))} placeholder="Purpose of the booking" className={inputClasses} required />
+                      <input type="number" min="1" value={bookingForm.expectedAttendees} onChange={(event) => setBookingForm((current) => ({ ...current, expectedAttendees: event.target.value }))} placeholder="Expected attendees" className={inputClasses} />
+                      <div className="flex flex-wrap gap-3">
+                        <button type="submit" disabled={isSubmittingBooking} className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-60">
+                          {isSubmittingBooking ? "Submitting..." : "Submit request"}
+                        </button>
+                        <button type="button" onClick={() => setActiveBookingResourceId(null)} className="inline-flex items-center justify-center rounded-2xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-400 hover:bg-sky-50">
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
+
+                  <div className="mt-5">
+                    <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Booking timeline</p>
+                    <div className="mt-3 grid gap-3">
+                      {resource.bookings?.length ? (
+                        resource.bookings.map((booking) => (
+                          <div key={booking.id} className={`rounded-[20px] border px-4 py-3 text-sm ${bookingTone(booking.status)}`}>
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="font-semibold">{booking.status}</span>
+                              <span>{booking.bookingDate} • {booking.startTime} - {booking.endTime}</span>
+                            </div>
+                            <p className="mt-2">{booking.requesterName}: {booking.purpose}</p>
+                            {booking.adminReason ? <p className="mt-1 text-xs opacity-80">Reason: {booking.adminReason}</p> : null}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="rounded-[20px] border border-dashed border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
+                          No bookings yet for this resource.
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </article>
               ))
             )}

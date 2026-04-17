@@ -1,12 +1,15 @@
 package backend.controller;
 
 import backend.dto.ApprovalResponse;
+import backend.dto.BookingDecisionRequest;
+import backend.dto.BookingResponse;
 import backend.dto.CreateResourceRequest;
 import backend.dto.MessageResponse;
 import backend.dto.ResourceResponse;
 import backend.dto.UserSummaryResponse;
 import backend.model.AppUser;
 import backend.service.AuthService;
+import backend.service.BookingService;
 import backend.service.ResourceService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -27,10 +30,12 @@ public class AdminController {
 
     private final AuthService authService;
     private final ResourceService resourceService;
+    private final BookingService bookingService;
 
-    public AdminController(AuthService authService, ResourceService resourceService) {
+    public AdminController(AuthService authService, ResourceService resourceService, BookingService bookingService) {
         this.authService = authService;
         this.resourceService = resourceService;
+        this.bookingService = bookingService;
     }
 
     @GetMapping("/technicians/pending")
@@ -54,6 +59,34 @@ public class AdminController {
             @AuthenticationPrincipal AppUser adminUser
     ) {
         return ResponseEntity.ok(resourceService.createResource(request, adminUser));
+    }
+
+    @GetMapping("/bookings")
+    public ResponseEntity<List<BookingResponse>> getAllBookings(
+            @AuthenticationPrincipal AppUser adminUser,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String status,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Long resourceId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String requester
+    ) {
+        return ResponseEntity.ok(bookingService.getAllBookings(adminUser, status, resourceId, requester));
+    }
+
+    @PatchMapping("/bookings/{bookingId}/approve")
+    public ResponseEntity<BookingResponse> approveBooking(
+            @PathVariable Long bookingId,
+            @RequestBody(required = false) BookingDecisionRequest request,
+            @AuthenticationPrincipal AppUser adminUser
+    ) {
+        return ResponseEntity.ok(bookingService.approveBooking(bookingId, request, adminUser));
+    }
+
+    @PatchMapping("/bookings/{bookingId}/reject")
+    public ResponseEntity<BookingResponse> rejectBooking(
+            @PathVariable Long bookingId,
+            @RequestBody BookingDecisionRequest request,
+            @AuthenticationPrincipal AppUser adminUser
+    ) {
+        return ResponseEntity.ok(bookingService.rejectBooking(bookingId, request, adminUser));
     }
 
     @PatchMapping("/resources/{resourceId}")

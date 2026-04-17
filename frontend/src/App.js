@@ -5,11 +5,13 @@ import Login from "./components/Login/Login";
 import Register from "./components/Register/Register";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 import AdminApprovalsPage from "./components/AdminDashboard/AdminApprovalsPage";
+import AdminBookingsPage from "./components/AdminDashboard/AdminBookingsPage";
 import AdminReportsPage from "./components/Reports/AdminReportsPage";
 import AdminResourcesPage from "./components/AdminDashboard/AdminResourcesPage";
 import AdminTicketsPage from "./components/AdminDashboard/AdminTicketsPage";
 import AdminUsersPage from "./components/AdminDashboard/AdminUsersPage";
 import StudentDashboard from "./components/StudentDashboard/StudentDashboard";
+import StudentBookingsPage from "./components/StudentDashboard/StudentBookingsPage";
 import StudentResourcesPage from "./components/StudentDashboard/StudentResourcesPage";
 import StudentTicketsPage from "./components/StudentDashboard/StudentTicketsPage";
 import TechnicianReportsPage from "./components/Reports/TechnicianReportsPage";
@@ -365,6 +367,21 @@ function App() {
             }
           />
           <Route
+            path="/admin-bookings"
+            element={
+              <ProtectedRoute session={session} requiredRole="ADMIN">
+                <AdminBookingsPage
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/student-tickets"
             element={
               <ProtectedRoute session={session} requiredRole="STUDENT">
@@ -384,6 +401,21 @@ function App() {
             element={
               <ProtectedRoute session={session} requiredRole="STUDENT">
                 <StudentResourcesPage
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student-bookings"
+            element={
+              <ProtectedRoute session={session} requiredRole="STUDENT">
+                <StudentBookingsPage
                   user={session.user}
                   token={session.token}
                   notifications={notifications}

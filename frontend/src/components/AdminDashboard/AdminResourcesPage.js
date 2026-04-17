@@ -73,7 +73,7 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const loadResources = useCallback(async (nextFilters = filters, showLoading = true) => {
+  const loadResources = useCallback(async (nextFilters, showLoading = true) => {
     if (showLoading) {
       setIsLoading(true);
     }
@@ -93,11 +93,11 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
     } finally {
       setIsLoading(false);
     }
-  }, [filters, token]);
+  }, [token]);
 
   useEffect(() => {
     loadResources(filters);
-  }, [loadResources]);
+  }, [filters, loadResources]);
 
   function handleChange(event) {
     const { name, value } = event.target;
