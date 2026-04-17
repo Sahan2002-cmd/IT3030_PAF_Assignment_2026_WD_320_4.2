@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Camera, CheckCircle2, ClipboardList, MessageSquare, RefreshCw, Send, Wrench } from "lucide-react";
+import { Camera, CheckCircle2, ClipboardList, MapPin, MessageSquare, RefreshCw, Send, Sparkles, Wrench } from "lucide-react";
 import {
   addTicketComment,
   assignTicket,
@@ -74,6 +74,29 @@ function priorityTone(priority) {
       return "bg-sky-100 text-sky-700";
     default:
       return "bg-emerald-100 text-emerald-700";
+  }
+}
+
+function commentRoleTheme(role) {
+  switch (role) {
+    case "ADMIN":
+      return {
+        card: "border-rose-200 bg-rose-50/85",
+        badge: "bg-rose-100 text-rose-700",
+        accent: "bg-rose-500",
+      };
+    case "TECHNICIAN":
+      return {
+        card: "border-cyan-200 bg-cyan-50/85",
+        badge: "bg-cyan-100 text-cyan-700",
+        accent: "bg-cyan-500",
+      };
+    default:
+      return {
+        card: "border-violet-200 bg-violet-50/85",
+        badge: "bg-violet-100 text-violet-700",
+        accent: "bg-violet-500",
+      };
   }
 }
 
@@ -190,19 +213,24 @@ function TicketWorkspace({
 
   return (
     <div className="grid gap-6">
-      <section className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] backdrop-blur sm:p-8">
+      <section className="relative overflow-hidden rounded-[36px] border border-white/70 bg-[radial-gradient(circle_at_top_left,rgba(186,230,253,0.65),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(240,249,255,0.94),rgba(224,242,254,0.92))] p-6 shadow-[0_24px_70px_rgba(14,165,233,0.12)] backdrop-blur sm:p-8">
+        <div className="absolute -right-12 top-0 h-36 w-36 rounded-full bg-sky-200/35 blur-3xl" />
+        <div className="absolute bottom-0 left-20 h-28 w-28 rounded-full bg-cyan-200/25 blur-3xl" />
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Ticket overview</p>
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-accent">
+              <Sparkles size={13} />
+              Ticket overview
+            </div>
             <h2 className="mt-3 text-3xl font-extrabold text-primary">Maintenance flow</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-              Track incident requests from open issues through technician work, resolution, closure, or rejection.
+              Track requests through each step, keep conversations visible, and make actions feel clear for students, technicians, and admins.
             </p>
           </div>
           <button
             type="button"
             onClick={onRefresh}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
+            className="relative z-10 inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-white/85 px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
           >
             <RefreshCw size={16} />
             Refresh tickets
@@ -220,9 +248,9 @@ function TicketWorkspace({
       </section>
 
       {allowCreate ? (
-        <section className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] backdrop-blur sm:p-8">
+        <section className="rounded-[36px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))] p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] backdrop-blur sm:p-8">
           <div className="flex items-start gap-4">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-primary">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(14,165,233,0.16),rgba(56,189,248,0.22))] text-primary">
               <ClipboardList size={20} />
             </div>
             <div>
@@ -259,35 +287,44 @@ function TicketWorkspace({
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-              <input
-                value={createForm.location}
-                onChange={(event) => updateCreateField("location", event.target.value)}
-                placeholder="Location"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
-                required
-              />
-              <select
-                value={createForm.category}
-                onChange={(event) => updateCreateField("category", event.target.value)}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
-              >
-                {TICKET_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {labelize(category)}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={createForm.priority}
-                onChange={(event) => updateCreateField("priority", event.target.value)}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
-              >
-                {TICKET_PRIORITIES.map((priority) => (
-                  <option key={priority} value={priority}>
-                    {labelize(priority)}
-                  </option>
-                ))}
-              </select>
+              <label className="grid gap-2">
+                <span className="text-sm font-semibold text-primary">Location</span>
+                <input
+                  value={createForm.location}
+                  onChange={(event) => updateCreateField("location", event.target.value)}
+                  placeholder="Room, hall, lab, or building"
+                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
+                  required
+                />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-semibold text-primary">Category</span>
+                <select
+                  value={createForm.category}
+                  onChange={(event) => updateCreateField("category", event.target.value)}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
+                >
+                  {TICKET_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {labelize(category)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-semibold text-primary">Priority</span>
+                <select
+                  value={createForm.priority}
+                  onChange={(event) => updateCreateField("priority", event.target.value)}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
+                >
+                  {TICKET_PRIORITIES.map((priority) => (
+                    <option key={priority} value={priority}>
+                      {labelize(priority)}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             <textarea
@@ -324,7 +361,7 @@ function TicketWorkspace({
               />
             </div>
 
-            <label className="rounded-[24px] border border-dashed border-sky-200 bg-sky-50/70 p-5 text-sm text-slate-600">
+            <label className="rounded-[28px] border border-dashed border-sky-200 bg-[linear-gradient(180deg,rgba(240,249,255,0.95),rgba(224,242,254,0.7))] p-5 text-sm text-slate-600">
               <span className="inline-flex items-center gap-2 font-semibold text-primary">
                 <Camera size={16} />
                 Upload up to 3 images
@@ -384,9 +421,9 @@ function TicketWorkspace({
         {tickets.map((ticket) => (
           <article
             key={ticket.id}
-            className="overflow-hidden rounded-[32px] border border-white/70 bg-white/92 shadow-[0_20px_60px_rgba(37,99,235,0.08)]"
+            className="overflow-hidden rounded-[36px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))] shadow-[0_24px_70px_rgba(37,99,235,0.10)]"
           >
-            <div className="border-b border-slate-100 bg-[linear-gradient(135deg,rgba(14,165,233,0.10),rgba(255,255,255,0.96))] p-6 sm:p-8">
+            <div className="border-b border-slate-100 bg-[linear-gradient(135deg,rgba(14,165,233,0.12),rgba(255,255,255,0.98),rgba(240,249,255,0.92))] p-6 sm:p-8">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -409,13 +446,13 @@ function TicketWorkspace({
 
                   <div className="mt-5 grid gap-3 text-sm text-slate-500 sm:grid-cols-2 lg:grid-cols-4">
                     <p><span className="font-semibold text-primary">Resource:</span> {ticket.resourceName}</p>
-                    <p><span className="font-semibold text-primary">Location:</span> {ticket.location}</p>
+                    <p className="inline-flex items-center gap-1.5"><MapPin size={14} className="text-accent" /><span><span className="font-semibold text-primary">Location:</span> {ticket.location}</span></p>
                     <p><span className="font-semibold text-primary">Created by:</span> {ticket.createdByName}</p>
                     <p><span className="font-semibold text-primary">Assigned:</span> {ticket.assignedTechnicianName || "Unassigned"}</p>
                   </div>
                 </div>
 
-                <div className="rounded-[24px] border border-white/80 bg-white/85 p-4 text-sm text-slate-600 shadow-sm lg:min-w-[260px]">
+                <div className="rounded-[28px] border border-white/80 bg-white/88 p-4 text-sm text-slate-600 shadow-sm lg:min-w-[280px]">
                   <p><span className="font-semibold text-primary">Preferred contact:</span> {ticket.preferredContactName}</p>
                   <p className="mt-2 break-all">{ticket.preferredContactEmail}</p>
                   <p className="mt-2">{ticket.preferredContactPhone}</p>
@@ -444,11 +481,14 @@ function TicketWorkspace({
                   </section>
                 ) : null}
 
-                <section className="rounded-[28px] border border-slate-200 bg-slate-50/70 p-5">
+                <section className="rounded-[32px] border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0.96))] p-5">
                   <div className="flex items-center gap-2">
                     <MessageSquare size={16} className="text-accent" />
                     <h4 className="text-lg font-bold text-primary">Comments</h4>
                   </div>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Role colors help you quickly distinguish student updates, technician notes, and admin responses.
+                  </p>
 
                   <div className="mt-4 grid gap-4">
                     {ticket.comments.length === 0 ? (
@@ -459,14 +499,29 @@ function TicketWorkspace({
                       ticket.comments.map((comment) => {
                         const isEditing = editingCommentId === comment.id;
                         const editBody = editCommentBodies[comment.id] ?? comment.body;
+                        const theme = commentRoleTheme(comment.authorRole);
                         return (
-                          <article key={comment.id} className="rounded-[24px] border border-slate-200 bg-white p-4">
+                          <article key={comment.id} className={`rounded-[24px] border p-4 shadow-sm ${theme.card}`}>
                             <div className="flex flex-wrap items-center justify-between gap-3">
-                              <div>
-                                <h5 className="font-semibold text-primary">{comment.authorName}</h5>
-                                <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{labelize(comment.authorRole)}</p>
+                              <div className="flex items-start gap-3">
+                                <span className={`mt-1 inline-flex h-3 w-3 rounded-full ${theme.accent}`} />
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h5 className="font-semibold text-primary">{comment.authorName}</h5>
+                                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${theme.badge}`}>
+                                      {labelize(comment.authorRole)}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1 text-xs text-slate-400">{formatDate(comment.updatedAt || comment.createdAt)}</p>
+                                </div>
                               </div>
-                              <p className="text-xs text-slate-400">{formatDate(comment.updatedAt || comment.createdAt)}</p>
+                              <div className="text-right">
+                                {comment.authorId === user?.id ? (
+                                  <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    You
+                                  </span>
+                                ) : null}
+                              </div>
                             </div>
 
                             {isEditing ? (
@@ -479,10 +534,10 @@ function TicketWorkspace({
                                     [comment.id]: event.target.value,
                                   }))
                                 }
-                                className="mt-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
+                                className="mt-4 w-full rounded-2xl border border-white/80 bg-white/80 px-4 py-3 text-sm text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
                               />
                             ) : (
-                              <p className="mt-3 text-sm leading-7 text-slate-600">{comment.body}</p>
+                              <p className="mt-3 text-sm leading-7 text-slate-700">{comment.body}</p>
                             )}
 
                             {comment.editable || comment.deletable ? (
@@ -498,14 +553,14 @@ function TicketWorkspace({
                                           "Comment updated."
                                         ).then(() => setEditingCommentId(null))
                                       }
-                                      className="rounded-2xl bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-900"
+                                    className="rounded-2xl bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-900"
                                     >
                                       Save
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => setEditingCommentId(null)}
-                                      className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
+                                      className="rounded-2xl border border-white/80 bg-white/85 px-4 py-2 text-xs font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
                                     >
                                       Cancel
                                     </button>
@@ -522,7 +577,7 @@ function TicketWorkspace({
                                         [comment.id]: comment.body,
                                       }));
                                     }}
-                                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
+                                    className="rounded-2xl border border-white/80 bg-white/85 px-4 py-2 text-xs font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
                                   >
                                     Edit
                                   </button>
@@ -594,7 +649,7 @@ function TicketWorkspace({
 
               <aside className="grid gap-5">
                 {(ticket.canUpdateStatus || showAssignment) ? (
-                  <section className="rounded-[28px] border border-slate-200 bg-slate-50/70 p-5">
+                  <section className="rounded-[32px] border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0.96))] p-5">
                     <div className="flex items-center gap-2">
                       <Wrench size={16} className="text-accent" />
                       <h4 className="text-lg font-bold text-primary">Ticket actions</h4>
@@ -729,7 +784,7 @@ function TicketWorkspace({
                 ) : null}
 
                 {(ticket.resolutionNotes || ticket.rejectionReason) ? (
-                  <section className="rounded-[28px] border border-slate-200 bg-slate-50/70 p-5">
+                  <section className="rounded-[32px] border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0.96))] p-5">
                     <h4 className="text-lg font-bold text-primary">Outcome notes</h4>
                     {ticket.resolutionNotes ? (
                       <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
