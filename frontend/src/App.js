@@ -5,6 +5,7 @@ import Login from "./components/Login/Login";
 import Register from "./components/Register/Register";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 import StudentDashboard from "./components/StudentDashboard/StudentDashboard";
+import StudentTicketsPage from "./components/StudentDashboard/StudentTicketsPage";
 import TechnicianDashboard from "./components/TechnicianDashboard/TechnicianDashboard";
 import ProtectedRoute from "./components/Common/ProtectedRoute";
 import LoadingScreen from "./components/Common/LoadingScreen";
@@ -269,6 +270,21 @@ function App() {
             element={
               <ProtectedRoute session={session} requiredRole="STUDENT">
                 <StudentDashboard
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student-tickets"
+            element={
+              <ProtectedRoute session={session} requiredRole="STUDENT">
+                <StudentTicketsPage
                   user={session.user}
                   token={session.token}
                   notifications={notifications}
