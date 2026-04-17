@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { ArrowRight, CheckCircle2, ShieldCheck, Ticket, UserCog, UserRoundCheck, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import DashboardLayout from "../Common/DashboardLayout";
-import TicketWorkspace from "../Tickets/TicketWorkspace";
 import {
-  approveTechnician,
-  deleteUser,
   fetchAllTickets,
   fetchAllUsers,
-  fetchAssignableTechnicians,
   fetchPendingTechnicians,
 } from "../../services/api";
 
@@ -23,13 +21,9 @@ function AdminDashboard({
   const [allUsers, setAllUsers] = useState([]);
   const [isLoadingApprovals, setIsLoadingApprovals] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
-  const [approvingId, setApprovingId] = useState(null);
-  const [deletingId, setDeletingId] = useState(null);
   const [ticketDashboard, setTicketDashboard] = useState(null);
-  const [assignableTechnicians, setAssignableTechnicians] = useState([]);
   const [isLoadingTickets, setIsLoadingTickets] = useState(true);
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   async function loadPendingTechnicians(showLoading = true) {
     if (showLoading) {
@@ -81,12 +75,8 @@ function AdminDashboard({
     }
 
     try {
-      const [ticketData, technicianData] = await Promise.all([
-        fetchAllTickets(token),
-        fetchAssignableTechnicians(token),
-      ]);
+      const ticketData = await fetchAllTickets(token);
       setTicketDashboard(ticketData);
-      setAssignableTechnicians(technicianData);
     } catch (loadError) {
       setError(loadError.message || "Failed to load tickets.");
     } finally {
@@ -103,18 +93,16 @@ function AdminDashboard({
       setError("");
 
       try {
-        const [pendingData, usersData, ticketData, technicianData] = await Promise.all([
+        const [pendingData, usersData, ticketData] = await Promise.all([
           fetchPendingTechnicians(token),
           fetchAllUsers(token),
           fetchAllTickets(token),
-          fetchAssignableTechnicians(token),
         ]);
 
         if (isActive) {
           setPendingTechnicians(pendingData);
           setAllUsers(usersData);
           setTicketDashboard(ticketData);
-          setAssignableTechnicians(technicianData);
         }
       } catch (loadError) {
         if (isActive) {
@@ -136,49 +124,11 @@ function AdminDashboard({
     };
   }, [token]);
 
-  async function handleApprove(technicianId) {
-    setApprovingId(technicianId);
-    setError("");
-    setSuccessMessage("");
-
-    try {
-      const response = await approveTechnician(technicianId, token);
-      setSuccessMessage(response.message || "Technician approved successfully.");
-      await refreshAdminData();
-      await onRefreshUser();
-    } catch (approveError) {
-      setError(approveError.message || "Failed to approve technician.");
-    } finally {
-      setApprovingId(null);
-    }
-  }
-
-  async function handleDeleteUser(userId, userName) {
-    const confirmed = window.confirm(`Delete ${userName}'s account? This action cannot be undone.`);
-    if (!confirmed) {
-      return;
-    }
-
-    setDeletingId(userId);
-    setError("");
-    setSuccessMessage("");
-
-    try {
-      const response = await deleteUser(userId, token);
-      setSuccessMessage(response.message || "User deleted successfully.");
-      await refreshAdminData();
-    } catch (deleteError) {
-      setError(deleteError.message || "Failed to delete user.");
-    } finally {
-      setDeletingId(null);
-    }
-  }
-
   return (
     <DashboardLayout
       eyebrow="Admin"
-      title="User management"
-      description="Review user accounts, approve technicians, and remove accounts when needed."
+      title="Admin dashboard"
+      description="A cleaner control center for accounts, approvals, and maintenance work, with each task available on its own focused page."
       user={user}
       notifications={notifications}
       onLogout={onLogout}
@@ -194,174 +144,100 @@ function AdminDashboard({
         </button>
       }
     >
-      <section className="rounded-[32px] border border-white/70 bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] backdrop-blur sm:p-8">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <article className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Total users</p>
-            <p className="mt-3 text-3xl font-extrabold text-primary">{allUsers.length}</p>
-          </article>
-          <article className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Pending approvals</p>
-            <p className="mt-3 text-3xl font-extrabold text-primary">{pendingTechnicians.length}</p>
-          </article>
-          <article className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Administrators</p>
-            <p className="mt-3 text-3xl font-extrabold text-primary">
-              {allUsers.filter((account) => account.role === "ADMIN").length}
-            </p>
-          </article>
-        </div>
-
-        <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Pending requests</p>
-            <h2 className="mt-3 text-3xl font-extrabold text-primary">{pendingTechnicians.length}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">Accounts waiting for review</p>
-          </div>
-        </div>
-
-        {error ? (
-          <p className="mt-6 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
-        ) : null}
-        {successMessage ? (
-          <p className="mt-6 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-            {successMessage}
-          </p>
-        ) : null}
-
-        {isLoadingApprovals ? (
-          <div className="mt-6 rounded-[28px] border border-dashed border-slate-200 bg-slate-50/70 p-10 text-center text-slate-500">
-            Loading pending technicians...
-          </div>
-        ) : null}
-
-        {!isLoadingApprovals && pendingTechnicians.length === 0 ? (
-          <div className="mt-6 rounded-[28px] border border-dashed border-sky-200 bg-sky-50/70 p-10 text-center">
-            <h3 className="text-xl font-bold text-primary">No pending requests</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              There are no technician accounts awaiting approval.
-            </p>
-          </div>
-        ) : null}
-
-        {!isLoadingApprovals && pendingTechnicians.length > 0 ? (
-          <div className="mt-6 grid gap-4">
-            {pendingTechnicians.map((technician) => (
-              <article
-                key={technician.id}
-                className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5"
-              >
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold text-primary">{technician.name}</h3>
-                    <p className="mt-1 text-sm text-slate-500">{technician.email}</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white">
-                        {technician.role}
-                      </span>
-                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-                        Pending
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleApprove(technician.id)}
-                    className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-70"
-                    disabled={approvingId === technician.id}
-                  >
-                    {approvingId === technician.id ? "Approving..." : "Approve"}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : null}
-
-        <div className="mt-10">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">All users</p>
-          <h2 className="mt-3 text-3xl font-extrabold text-primary">{allUsers.length}</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Review all registered accounts and remove users when required.
-          </p>
-        </div>
-
-        {isLoadingUsers ? (
-          <div className="mt-6 rounded-[28px] border border-dashed border-slate-200 bg-slate-50/70 p-10 text-center text-slate-500">
-            Loading users...
-          </div>
-        ) : null}
-
-        {!isLoadingUsers && allUsers.length > 0 ? (
-          <div className="mt-6 grid gap-4">
-            {allUsers.map((account) => {
-              const isCurrentAdmin = account.id === user?.id;
-              const statusLabel =
-                account.role === "TECHNICIAN" ? (account.approved ? "Approved" : "Pending approval") : "Active";
-
-              return (
-                <article
-                  key={account.id}
-                  className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5"
-                >
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <h3 className="text-xl font-bold text-primary">{account.name}</h3>
-                      <p className="mt-1 text-sm text-slate-500">{account.email}</p>
-                      {account.mobileNumber ? <p className="mt-1 text-sm text-slate-500">{account.mobileNumber}</p> : null}
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white">
-                          {account.role}
-                        </span>
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                            account.approved
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-amber-100 text-amber-700"
-                          }`}
-                        >
-                          {statusLabel}
-                        </span>
-                        {isCurrentAdmin ? (
-                          <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">
-                            Current account
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteUser(account.id, account.name)}
-                      className="inline-flex items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={isCurrentAdmin || deletingId === account.id}
-                    >
-                      {deletingId === account.id ? "Deleting..." : "Delete"}
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : null}
-      </section>
-
-      {isLoadingTickets ? (
-        <section className="mt-6 rounded-[28px] border border-dashed border-slate-200 bg-white/92 p-10 text-center text-slate-500">
-          Loading maintenance tickets...
+      {error ? (
+        <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
+      ) : null}
+      {isLoadingApprovals || isLoadingUsers || isLoadingTickets ? (
+        <section className="rounded-[28px] border border-dashed border-slate-200 bg-white/92 p-10 text-center text-slate-500">
+          Loading admin dashboard...
         </section>
       ) : (
-        <TicketWorkspace
-          mode="admin"
-          user={user}
-          token={token}
-          dashboard={ticketDashboard}
-          technicians={assignableTechnicians}
-          onRefresh={() => loadTicketDashboard(false)}
-          showAssignment
-        />
+        <div className="grid gap-6">
+          <section className="relative overflow-hidden rounded-[36px] border border-white/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(30,41,59,0.90),rgba(14,165,233,0.76))] p-8 shadow-[0_28px_90px_rgba(15,23,42,0.20)] sm:p-10">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-3xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/90">
+                  <ShieldCheck size={14} />
+                  Admin control center
+                </div>
+                <h2 className="mt-5 text-4xl font-extrabold leading-tight text-white sm:text-5xl">
+                  Manage people, approvals, and ticket operations without crowding one screen.
+                </h2>
+                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-100/90">
+                  This dashboard gives you a clean overview first, while each admin task opens into its own focused and easier-to-manage page.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Link to="/admin-tickets" className="inline-flex items-center justify-center gap-2 rounded-[22px] bg-white px-6 py-4 text-sm font-semibold text-primary transition hover:bg-sky-50">
+                  Ticket management
+                  <ArrowRight size={16} />
+                </Link>
+                <button
+                  type="button"
+                  onClick={refreshAdminData}
+                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15"
+                >
+                  Refresh overview
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <article className="rounded-[28px] border border-slate-200 bg-white/92 p-6 shadow-[0_18px_45px_rgba(37,99,235,0.08)]">
+              <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-primary"><Users size={18} /></div>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-accent">Total users</p>
+              <p className="mt-3 text-4xl font-extrabold text-primary">{allUsers.length}</p>
+            </article>
+            <article className="rounded-[28px] border border-amber-100 bg-white/92 p-6 shadow-[0_18px_45px_rgba(245,158,11,0.08)]">
+              <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700"><UserRoundCheck size={18} /></div>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">Pending approvals</p>
+              <p className="mt-3 text-4xl font-extrabold text-primary">{pendingTechnicians.length}</p>
+            </article>
+            <article className="rounded-[28px] border border-cyan-100 bg-white/92 p-6 shadow-[0_18px_45px_rgba(6,182,212,0.08)]">
+              <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700"><Ticket size={18} /></div>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-cyan-700">All tickets</p>
+              <p className="mt-3 text-4xl font-extrabold text-primary">{ticketDashboard?.totalTickets || 0}</p>
+            </article>
+            <article className="rounded-[28px] border border-emerald-100 bg-white/92 p-6 shadow-[0_18px_45px_rgba(16,185,129,0.08)]">
+              <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={18} /></div>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Resolved tickets</p>
+              <p className="mt-3 text-4xl font-extrabold text-primary">{ticketDashboard?.resolvedTickets || 0}</p>
+            </article>
+          </section>
+
+          <section className="grid gap-6 xl:grid-cols-3">
+            <article className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-primary"><Ticket size={20} /></div>
+              <h3 className="mt-5 text-2xl font-extrabold text-primary">Ticket management</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-500">Assign technicians, review every incident, update workflow status, and manage rejection paths from a dedicated page.</p>
+              <Link to="/admin-tickets" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-primary">
+                Open ticket page
+                <ArrowRight size={15} />
+              </Link>
+            </article>
+
+            <article className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-700"><UserCog size={20} /></div>
+              <h3 className="mt-5 text-2xl font-extrabold text-primary">User management</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-500">See all accounts in one focused user view, including roles, approval state, and delete actions when cleanup is needed.</p>
+              <Link to="/admin-users" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-primary">
+                Open user management
+                <ArrowRight size={15} />
+              </Link>
+            </article>
+
+            <article className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-700"><UserRoundCheck size={20} /></div>
+              <h3 className="mt-5 text-2xl font-extrabold text-primary">Pending approvals</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-500">Keep technician approvals separate and easy to review so the admin queue stays calm and straightforward.</p>
+              <Link to="/admin-approvals" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-primary">
+                Open approvals
+                <ArrowRight size={15} />
+              </Link>
+            </article>
+          </section>
+        </div>
       )}
     </DashboardLayout>
   );

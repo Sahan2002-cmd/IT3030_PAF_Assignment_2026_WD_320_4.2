@@ -38,15 +38,18 @@ public class TicketService {
     private final IncidentTicketRepository incidentTicketRepository;
     private final TicketCommentRepository ticketCommentRepository;
     private final AppUserRepository appUserRepository;
+    private final NotificationEmailService notificationEmailService;
 
     public TicketService(
             IncidentTicketRepository incidentTicketRepository,
             TicketCommentRepository ticketCommentRepository,
-            AppUserRepository appUserRepository
+            AppUserRepository appUserRepository,
+            NotificationEmailService notificationEmailService
     ) {
         this.incidentTicketRepository = incidentTicketRepository;
         this.ticketCommentRepository = ticketCommentRepository;
         this.appUserRepository = appUserRepository;
+        this.notificationEmailService = notificationEmailService;
     }
 
     @Transactional
@@ -122,10 +125,12 @@ public class TicketService {
         requireAdmin(user);
         IncidentTicket ticket = findTicket(ticketId);
         ensureNotClosed(ticket);
+        String previousStatus = ticket.getStatus().name();
         ticket.setStatus(TicketStatus.REJECTED);
         ticket.setRejectionReason(request.reason().trim());
         ticket.setResolutionNotes(null);
         ticket.touch();
+        notificationEmailService.sendTicketStatusUpdate(ticket, user, previousStatus);
         return toResponse(ticket, user);
     }
 
@@ -134,6 +139,7 @@ public class TicketService {
         IncidentTicket ticket = findTicket(ticketId);
         ensureCanUpdateStatus(ticket, user);
 
+        String previousStatus = ticket.getStatus().name();
         TicketStatus nextStatus = parseStatus(request.status());
         String resolutionNotes = StringUtils.hasText(request.resolutionNotes())
                 ? request.resolutionNotes().trim()
@@ -150,6 +156,9 @@ public class TicketService {
             ticket.setResolutionNotes(ticket.getResolutionNotes());
         }
         ticket.touch();
+        if (!previousStatus.equals(ticket.getStatus().name())) {
+            notificationEmailService.sendTicketStatusUpdate(ticket, user, previousStatus);
+        }
         return toResponse(ticket, user);
     }
 
