@@ -184,7 +184,15 @@ function formatAvailability(resource) {
   return `${formatDate(startDate)} to ${formatDate(endDate)}, ${formatTime(resource.availableFromTime)} - ${formatTime(resource.availableToTime)}`;
 }
 
-function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
+function StudentResourcesPage({
+  user,
+  token,
+  notifications,
+  onLogout,
+  onMarkNotificationsRead,
+  onProfileUpdate,
+  onAddNotification,
+}) {
   const [filters, setFilters] = useState(initialFilters);
   const [resources, setResources] = useState([]);
   const [activeBookingResourceId, setActiveBookingResourceId] = useState(null);
@@ -297,7 +305,7 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
     setSuccessMessage("");
 
     try {
-      await createBooking(
+      const response = await createBooking(
         {
           resourceId,
           bookingDate: bookingForm.bookingDate,
@@ -308,7 +316,14 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
         },
         token
       );
+      const resourceName =
+        resources.find((resource) => resource.id === resourceId)?.name || response.resourceName || "resource";
       setSuccessMessage("Booking request submitted. Pending requests show in yellow and approved bookings show in red.");
+      onAddNotification?.({
+        title: "Booking request submitted",
+        message: `Your booking for ${resourceName} on ${formatDateLabel(bookingForm.bookingDate)} is pending approval.`,
+        type: "booking",
+      });
       setBookingForm(emptyBookingForm);
       setActiveBookingResourceId(null);
       await loadResources(filters, false);

@@ -35,15 +35,18 @@ public class BookingService {
     private final FacilityBookingRepository facilityBookingRepository;
     private final FacilityResourceRepository facilityResourceRepository;
     private final NotificationEmailService notificationEmailService;
+    private final UserNotificationService userNotificationService;
 
     public BookingService(
             FacilityBookingRepository facilityBookingRepository,
             FacilityResourceRepository facilityResourceRepository,
-            NotificationEmailService notificationEmailService
+            NotificationEmailService notificationEmailService,
+            UserNotificationService userNotificationService
     ) {
         this.facilityBookingRepository = facilityBookingRepository;
         this.facilityResourceRepository = facilityResourceRepository;
         this.notificationEmailService = notificationEmailService;
+        this.userNotificationService = userNotificationService;
     }
 
     @Transactional
@@ -70,6 +73,12 @@ public class BookingService {
         booking.setStatus(BookingStatus.PENDING);
 
         FacilityBooking saved = facilityBookingRepository.save(booking);
+        userNotificationService.notifyAdmins(
+                "New booking request",
+                saved.getRequestedBy().getName() + " requested " + saved.getResource().getName()
+                        + " for " + saved.getBookingDate() + ".",
+                "booking"
+        );
         return toResponse(saved);
     }
 
@@ -122,6 +131,12 @@ public class BookingService {
         );
         booking.setStatus(BookingStatus.APPROVED);
         booking.setAdminReason(normalizeReason(request));
+        userNotificationService.notifyUser(
+                booking.getRequestedBy(),
+                "Booking approved",
+                "Your booking for " + booking.getResource().getName() + " on " + booking.getBookingDate() + " was approved.",
+                "booking"
+        );
         notificationEmailService.sendBookingDecision(booking, user);
         return toResponse(booking);
     }
@@ -138,6 +153,12 @@ public class BookingService {
 
         booking.setStatus(BookingStatus.REJECTED);
         booking.setAdminReason(request.reason().trim());
+        userNotificationService.notifyUser(
+                booking.getRequestedBy(),
+                "Booking rejected",
+                "Your booking for " + booking.getResource().getName() + " on " + booking.getBookingDate() + " was rejected.",
+                "booking"
+        );
         notificationEmailService.sendBookingDecision(booking, user);
         return toResponse(booking);
     }
@@ -158,6 +179,12 @@ public class BookingService {
 
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setAdminReason(normalizeReason(request));
+        userNotificationService.notifyUser(
+                booking.getRequestedBy(),
+                "Booking cancelled",
+                "Your booking for " + booking.getResource().getName() + " on " + booking.getBookingDate() + " was cancelled.",
+                "booking"
+        );
         return toResponse(booking);
     }
 

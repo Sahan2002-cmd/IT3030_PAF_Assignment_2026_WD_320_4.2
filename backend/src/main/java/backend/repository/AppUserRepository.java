@@ -13,4 +13,6 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     boolean existsByEmailIgnoreCase(String email);
 
     List<AppUser> findByRoleAndApprovedOrderByCreatedAtAsc(Role role, boolean approved);
+
+    List<AppUser> findByRoleOrderByCreatedAtAsc(Role role);
 }

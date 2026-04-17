@@ -39,17 +39,20 @@ public class TicketService {
     private final TicketCommentRepository ticketCommentRepository;
     private final AppUserRepository appUserRepository;
     private final NotificationEmailService notificationEmailService;
+    private final UserNotificationService userNotificationService;
 
     public TicketService(
             IncidentTicketRepository incidentTicketRepository,
             TicketCommentRepository ticketCommentRepository,
             AppUserRepository appUserRepository,
-            NotificationEmailService notificationEmailService
+            NotificationEmailService notificationEmailService,
+            UserNotificationService userNotificationService
     ) {
         this.incidentTicketRepository = incidentTicketRepository;
         this.ticketCommentRepository = ticketCommentRepository;
         this.appUserRepository = appUserRepository;
         this.notificationEmailService = notificationEmailService;
+        this.userNotificationService = userNotificationService;
     }
 
     @Transactional
@@ -69,6 +72,11 @@ public class TicketService {
         ticket.setStatus(TicketStatus.OPEN);
         ticket.setAttachments(mapAttachments(request.attachments()));
         IncidentTicket saved = incidentTicketRepository.save(ticket);
+        userNotificationService.notifyAdmins(
+                "New incident ticket",
+                createdBy.getName() + " raised " + saved.getTicketNumber() + " for " + saved.getResourceName() + ".",
+                "ticket"
+        );
         return toResponse(saved, createdBy);
     }
 
@@ -130,6 +138,12 @@ public class TicketService {
         ticket.setRejectionReason(request.reason().trim());
         ticket.setResolutionNotes(null);
         ticket.touch();
+        userNotificationService.notifyUser(
+                ticket.getCreatedBy(),
+                "Ticket rejected",
+                ticket.getTicketNumber() + " was rejected.",
+                "ticket"
+        );
         notificationEmailService.sendTicketStatusUpdate(ticket, user, previousStatus);
         return toResponse(ticket, user);
     }
@@ -157,6 +171,22 @@ public class TicketService {
         }
         ticket.touch();
         if (!previousStatus.equals(ticket.getStatus().name())) {
+            userNotificationService.notifyUser(
+                    ticket.getCreatedBy(),
+                    switch (ticket.getStatus()) {
+                        case IN_PROGRESS -> "Ticket in progress";
+                        case RESOLVED -> "Ticket resolved";
+                        case CLOSED -> "Ticket closed";
+                        default -> "Ticket updated";
+                    },
+                    switch (ticket.getStatus()) {
+                        case IN_PROGRESS -> ticket.getTicketNumber() + " is now in progress.";
+                        case RESOLVED -> ticket.getTicketNumber() + " has been resolved.";
+                        case CLOSED -> ticket.getTicketNumber() + " has been closed.";
+                        default -> ticket.getTicketNumber() + " status changed to " + ticket.getStatus().name() + ".";
+                    },
+                    "ticket"
+            );
             notificationEmailService.sendTicketStatusUpdate(ticket, user, previousStatus);
         }
         return toResponse(ticket, user);

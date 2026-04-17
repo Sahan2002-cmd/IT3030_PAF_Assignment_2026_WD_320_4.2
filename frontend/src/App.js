@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
 import Login from "./components/Login/Login";
@@ -21,9 +21,15 @@ import TechnicianDashboard from "./components/TechnicianDashboard/TechnicianDash
 import TechnicianTicketsPage from "./components/TechnicianDashboard/TechnicianTicketsPage";
 import ProtectedRoute from "./components/Common/ProtectedRoute";
 import LoadingScreen from "./components/Common/LoadingScreen";
-import { fetchCurrentUser, updateOwnProfile } from "./services/api";
+import { fetchCurrentUser, fetchMyNotifications, markNotificationsRead, updateOwnProfile } from "./services/api";
 import { clearSession, loadSession, storeSession, updateStoredUser } from "./utils/auth";
-import { addNotification, loadNotifications, markAllNotificationsRead } from "./utils/notifications";
+import {
+  addNotification,
+  loadNotifications,
+  markAllNotificationsRead,
+} from "./utils/notifications";
+
+const NOTIFICATION_SYNC_INTERVAL_MS = 30000;
 
 function App() {
   const [session, setSession] = useState(() => {
@@ -37,23 +43,38 @@ function App() {
       user: storedSession.user,
     };
   });
-  const [notifications, setNotifications] = useState([]);
+  const [localNotifications, setLocalNotifications] = useState([]);
+  const [serverNotifications, setServerNotifications] = useState([]);
 
   useEffect(() => {
     if (!session.user?.id) {
-      setNotifications([]);
+      setLocalNotifications([]);
+      setServerNotifications([]);
       return;
     }
 
-    setNotifications(loadNotifications(session.user.id));
+    setLocalNotifications(loadNotifications(session.user.id));
   }, [session.user?.id]);
+
+  const notifications = useMemo(() => (
+    [...serverNotifications, ...localNotifications]
+      .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+  ), [localNotifications, serverNotifications]);
 
   const addUserNotification = useCallback((userId, notification) => {
     const nextNotifications = addNotification(userId, notification);
     if (session.user?.id === userId) {
-      setNotifications(nextNotifications);
+      setLocalNotifications(nextNotifications);
     }
   }, [session.user?.id]);
+
+  const addCurrentUserNotification = useCallback((notification) => {
+    if (!session.user?.id) {
+      return;
+    }
+
+    addUserNotification(session.user.id, notification);
+  }, [addUserNotification, session.user?.id]);
 
   useEffect(() => {
     if (session.status !== "loading" || !session.token || session.user) {
@@ -80,14 +101,6 @@ function App() {
           createdAt: currentUser.createdAt,
         };
 
-        if (nextUser.role === "TECHNICIAN" && nextUser.approved && !session.user?.approved) {
-          addUserNotification(nextUser.id, {
-            title: "Approval confirmed",
-            message: "Your technician account has been approved.",
-            type: "approval",
-          });
-        }
-
         updateStoredUser(nextUser);
         setSession({
           status: "authenticated",
@@ -113,7 +126,36 @@ function App() {
     return () => {
       isActive = false;
     };
-  }, [addUserNotification, session.status, session.token, session.user]);
+  }, [session.status, session.token, session.user]);
+
+  useEffect(() => {
+    if (session.status !== "authenticated" || !session.token || !session.user?.id) {
+      return;
+    }
+
+    let isActive = true;
+
+    async function syncServerNotifications() {
+      try {
+        const nextNotifications = await fetchMyNotifications(session.token);
+        if (isActive) {
+          setServerNotifications(Array.isArray(nextNotifications) ? nextNotifications : []);
+        }
+      } catch {
+        if (isActive) {
+          setServerNotifications([]);
+        }
+      }
+    }
+
+    syncServerNotifications();
+    const intervalId = window.setInterval(syncServerNotifications, NOTIFICATION_SYNC_INTERVAL_MS);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+    };
+  }, [session.status, session.token, session.user?.id]);
 
   function handleLogin(authResponse) {
     const nextSession = storeSession(authResponse);
@@ -154,14 +196,6 @@ function App() {
         approved: currentUser.approved,
         createdAt: currentUser.createdAt,
       };
-
-      if (nextUser.role === "TECHNICIAN" && nextUser.approved && !session.user?.approved) {
-        addUserNotification(nextUser.id, {
-          title: "Approval confirmed",
-          message: "Your technician account has been approved.",
-          type: "approval",
-        });
-      }
 
       updateStoredUser(nextUser);
       setSession((current) => ({
@@ -231,12 +265,26 @@ function App() {
     return response;
   }
 
-  function handleMarkNotificationsRead() {
+  async function handleMarkNotificationsRead() {
     if (!session.user?.id) {
       return;
     }
 
-    setNotifications(markAllNotificationsRead(session.user.id));
+    setLocalNotifications(markAllNotificationsRead(session.user.id));
+
+    if (!session.token) {
+      return;
+    }
+
+    try {
+      await markNotificationsRead(session.token);
+      setServerNotifications((current) => current.map((notification) => ({
+        ...notification,
+        read: true,
+      })));
+    } catch {
+      // Leave local state updated even if the server call fails.
+    }
   }
 
   function renderHome() {
@@ -411,6 +459,7 @@ function App() {
                   onLogout={handleLogout}
                   onMarkNotificationsRead={handleMarkNotificationsRead}
                   onProfileUpdate={handleProfileUpdate}
+                  onAddNotification={addCurrentUserNotification}
                 />
               </ProtectedRoute>
             }

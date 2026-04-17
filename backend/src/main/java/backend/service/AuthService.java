@@ -46,6 +46,7 @@ public class AuthService {
     private final GoogleTokenVerifierService googleTokenVerifierService;
     private final NotificationEmailService notificationEmailService;
     private final PasswordResetOtpNotifier passwordResetOtpNotifier;
+    private final UserNotificationService userNotificationService;
 
     public AuthService(
             AppUserRepository appUserRepository,
@@ -54,7 +55,8 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             GoogleTokenVerifierService googleTokenVerifierService,
             NotificationEmailService notificationEmailService,
-            PasswordResetOtpNotifier passwordResetOtpNotifier
+            PasswordResetOtpNotifier passwordResetOtpNotifier,
+            UserNotificationService userNotificationService
     ) {
         this.appUserRepository = appUserRepository;
         this.authenticationManager = authenticationManager;
@@ -63,6 +65,7 @@ public class AuthService {
         this.googleTokenVerifierService = googleTokenVerifierService;
         this.notificationEmailService = notificationEmailService;
         this.passwordResetOtpNotifier = passwordResetOtpNotifier;
+        this.userNotificationService = userNotificationService;
     }
 
     @Transactional
@@ -311,6 +314,12 @@ public class AuthService {
         }
 
         user.setApproved(true);
+        userNotificationService.notifyUser(
+                user,
+                "Approval confirmed",
+                "Your technician account has been approved.",
+                "approval"
+        );
         notificationEmailService.sendTechnicianApproval(user);
 
         return new ApprovalResponse(
