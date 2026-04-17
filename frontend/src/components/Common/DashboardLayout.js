@@ -40,7 +40,7 @@ function DashboardLayout({
     () => notifications.filter((notification) => !notification.read).length,
     [notifications]
   );
-  const dashboardRoute = user?.role ? `/${user.role.toLowerCase()}-dashboard` : "/";
+  const dashboardRoute = user?.role ? `/${user.role.toLowerCase()}-dashboard` : null;
 
   function formatNotificationTime(value) {
     if (!value) {
@@ -78,16 +78,26 @@ function DashboardLayout({
               <NavLink to="/" end className={navLinkClasses}>Home</NavLink>
               <NavLink to="/about" className={navLinkClasses}>About Us</NavLink>
               <NavLink to="/student-resources" className={navLinkClasses}>Resources</NavLink>
-              <NavLink to={dashboardRoute} className={navLinkClasses}>Dashboard</NavLink>
             </nav>
 
             <div className="flex items-center gap-3">
-              <Link
-                to={dashboardRoute}
-                className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/10"
-              >
-                Dashboard
-              </Link>
+              <div className="hidden items-center gap-3 rounded-[22px] border border-white/12 bg-white/6 px-3 py-2 text-white shadow-[0_14px_40px_rgba(15,23,42,0.24)] lg:flex">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/12 text-sm font-bold text-white">
+                  {initials || "U"}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white">{user?.name || "Campus User"}</p>
+                  <p className="truncate text-xs uppercase tracking-[0.16em] text-sky-300">{user?.role}</p>
+                </div>
+              </div>
+              {dashboardRoute ? (
+                <Link
+                  to={dashboardRoute}
+                  className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/10"
+                >
+                  Dashboard
+                </Link>
+              ) : null}
             </div>
           </div>
         </header>
@@ -207,22 +217,35 @@ function DashboardLayout({
         </section>
         </main>
 
-        <footer className="mt-8 border-t border-white/10 bg-[linear-gradient(180deg,rgba(2,6,23,0.98),rgba(15,23,42,0.98),rgba(30,41,59,0.98))] p-6 text-white shadow-[0_24px_60px_rgba(15,23,42,0.20)]">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-2xl">
+        <footer className="mt-20 border-t border-white/10 bg-[linear-gradient(180deg,rgba(2,6,23,0.98),rgba(15,23,42,0.98),rgba(30,41,59,0.98))] text-white">
+          <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.4fr_0.8fr_1fr] lg:px-8">
+            <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-sky-300">Campus Hub</p>
-              <h2 className="mt-3 text-2xl font-black leading-tight text-white [font-family:Georgia,'Times_New_Roman',serif]">
-                Campus management with clearer resource booking and support workflows.
+              <h2 className="mt-4 max-w-md text-3xl font-black leading-tight text-white [font-family:Georgia,'Times_New_Roman',serif]">
+                One place for campus resources, bookings, and maintenance coordination.
               </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-300">
-                This workspace keeps bookings, resources, tickets, and account actions in one coordinated system.
+              <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300">
+                Campus Hub helps students, administrators, and technicians stay aligned through a cleaner flow for resource discovery, booking approval, and maintenance support.
               </p>
             </div>
-            <div className="grid gap-2 text-sm text-slate-300">
-              <p className="font-semibold uppercase tracking-[0.18em] text-slate-400">Quick Notes</p>
-              <p className="transition hover:text-white">Track campus resources and shared facilities</p>
-              <p className="transition hover:text-white">Review approvals and booking workflow clearly</p>
-              <p className="transition hover:text-white">Coordinate maintenance and support records</p>
+
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-400">Explore</p>
+              <div className="mt-4 grid gap-3 text-sm text-slate-300">
+                <Link to="/" className="group inline-flex items-center gap-2 transition hover:text-white"><span className="transition group-hover:translate-x-1">Home</span></Link>
+                <Link to="/about" className="group inline-flex items-center gap-2 transition hover:text-white"><span className="transition group-hover:translate-x-1">About Us</span></Link>
+                <Link to="/student-resources" className="group inline-flex items-center gap-2 transition hover:text-white"><span className="transition group-hover:translate-x-1">Resources</span></Link>
+                <Link to="/login" className="group inline-flex items-center gap-2 transition hover:text-white"><span className="transition group-hover:translate-x-1">Login</span></Link>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-400">What This Site Does</p>
+              <div className="mt-4 grid gap-3 text-sm leading-7 text-slate-300">
+                <p>Shows campus facilities and equipment in a searchable catalogue.</p>
+                <p>Lets students request bookings with date, time slot, and attendee count.</p>
+                <p>Helps admins review approvals and manage resource availability clearly.</p>
+              </div>
             </div>
           </div>
         </footer>

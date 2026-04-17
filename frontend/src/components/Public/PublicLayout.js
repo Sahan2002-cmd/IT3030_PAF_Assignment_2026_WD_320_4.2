@@ -12,6 +12,15 @@ function PublicLayout({ children, session }) {
   const dashboardRoute = session.user?.role
     ? `/${session.user.role.toLowerCase()}-dashboard`
     : null;
+  const initials = (session.user?.name || session.user?.email || "U")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
     <div className="min-h-screen bg-transparent text-primary">
@@ -35,12 +44,23 @@ function PublicLayout({ children, session }) {
 
           <div className="flex items-center gap-3">
             {dashboardRoute ? (
-              <Link
-                to={dashboardRoute}
-                className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/10"
-              >
-                Dashboard
-              </Link>
+              <>
+                <div className="hidden items-center gap-3 rounded-[22px] border border-white/12 bg-white/6 px-3 py-2 text-white shadow-[0_14px_40px_rgba(15,23,42,0.24)] lg:flex">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/12 text-sm font-bold text-white">
+                    {initials || "U"}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">{session.user?.name || "Campus User"}</p>
+                    <p className="truncate text-xs uppercase tracking-[0.16em] text-sky-300">{session.user?.role}</p>
+                  </div>
+                </div>
+                <Link
+                  to={dashboardRoute}
+                  className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/10"
+                >
+                  Dashboard
+                </Link>
+              </>
             ) : (
               <>
                 <Link
