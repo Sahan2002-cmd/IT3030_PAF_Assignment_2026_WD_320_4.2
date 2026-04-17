@@ -21,6 +21,10 @@ function bookingTone(status) {
   }
 }
 
+function formatBookingWindow(booking) {
+  return `${booking.bookingDate} - ${booking.startTime} to ${booking.endTime}`;
+}
+
 function AdminBookingsPage({ user, token, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
   const [filters, setFilters] = useState({
     status: "",
@@ -110,11 +114,86 @@ function AdminBookingsPage({ user, token, notifications, onLogout, onMarkNotific
     }
   }
 
+  const pendingBookings = bookings.filter((booking) => booking.status === "PENDING");
+  const reviewedBookings = bookings.filter((booking) => booking.status !== "PENDING");
+  const approvedCount = bookings.filter((booking) => booking.status === "APPROVED").length;
+  const rejectedCount = bookings.filter((booking) => booking.status === "REJECTED").length;
+  const cancelledCount = bookings.filter((booking) => booking.status === "CANCELLED").length;
+
+  function renderBookingCard(booking, showActions = false) {
+    return (
+      <article key={booking.id} className="rounded-[32px] border border-sky-200/90 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 className="text-2xl font-extrabold text-primary">{booking.resourceName}</h2>
+            <p className="mt-2 text-sm text-slate-500">{booking.resourceType} - {booking.resourceLocation}</p>
+            <p className="mt-2 text-sm text-slate-600">Requested by {booking.requesterName} ({booking.requesterEmail})</p>
+            <p className="mt-2 text-sm font-semibold text-slate-700">{formatBookingWindow(booking)}</p>
+            <p className="mt-3 text-sm leading-7 text-slate-600">{booking.purpose}</p>
+          </div>
+          <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${bookingTone(booking.status)}`}>
+            {booking.status}
+          </span>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
+            Expected attendees: <span className="font-semibold text-primary">{booking.expectedAttendees || "-"}</span>
+          </div>
+          <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
+            Requested on: <span className="font-semibold text-primary">{new Date(booking.createdAt).toLocaleString()}</span>
+          </div>
+        </div>
+
+        {booking.adminReason ? (
+          <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
+            Admin reason: <span className="font-semibold text-primary">{booking.adminReason}</span>
+          </div>
+        ) : null}
+
+        {showActions ? (
+          <div className="mt-5 grid gap-3">
+            <textarea
+              rows={3}
+              value={decisionNotes[booking.id] || ""}
+              onChange={(event) =>
+                setDecisionNotes((current) => ({
+                  ...current,
+                  [booking.id]: event.target.value,
+                }))
+              }
+              placeholder="Optional approval note or required rejection reason"
+              className={inputClasses}
+            />
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => handleApprove(booking.id)}
+                disabled={busyKey === `approve-${booking.id}`}
+                className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-60"
+              >
+                {busyKey === `approve-${booking.id}` ? "Approving..." : "Approve request"}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleReject(booking.id)}
+                disabled={busyKey === `reject-${booking.id}`}
+                className="inline-flex items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-wait disabled:opacity-60"
+              >
+                {busyKey === `reject-${booking.id}` ? "Rejecting..." : "Reject request"}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
   return (
     <DashboardLayout
       eyebrow="Admin"
-      title="Booking management"
-      description="Review, approve, reject, and filter resource booking requests across the whole system."
+      title="Booking approvals"
+      description="Review pending resource requests, approve or reject them quickly, and keep track of the full booking workflow."
       user={user}
       notifications={notifications}
       onLogout={onLogout}
@@ -137,7 +216,26 @@ function AdminBookingsPage({ user, token, notifications, onLogout, onMarkNotific
       ) : null}
 
       <section className="rounded-[32px] border border-sky-200/90 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
-        <form className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto]" onSubmit={handleFilterSubmit}>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <article className="rounded-[24px] border border-amber-200 bg-amber-50/80 p-5">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-amber-700">Pending</p>
+            <p className="mt-3 text-3xl font-extrabold text-primary">{pendingBookings.length}</p>
+          </article>
+          <article className="rounded-[24px] border border-red-200 bg-red-50/80 p-5">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-red-700">Approved</p>
+            <p className="mt-3 text-3xl font-extrabold text-primary">{approvedCount}</p>
+          </article>
+          <article className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-700">Rejected</p>
+            <p className="mt-3 text-3xl font-extrabold text-primary">{rejectedCount}</p>
+          </article>
+          <article className="rounded-[24px] border border-sky-200 bg-sky-50/80 p-5">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-sky-700">Cancelled</p>
+            <p className="mt-3 text-3xl font-extrabold text-primary">{cancelledCount}</p>
+          </article>
+        </div>
+
+        <form className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto]" onSubmit={handleFilterSubmit}>
           <select name="status" value={filters.status} onChange={handleFilterChange} className={inputClasses}>
             <option value="">All statuses</option>
             <option value="PENDING">Pending</option>
@@ -171,80 +269,47 @@ function AdminBookingsPage({ user, token, notifications, onLogout, onMarkNotific
           Loading bookings...
         </section>
       ) : (
-        <section className="mt-6 grid gap-4">
-          {bookings.length === 0 ? (
-            <div className="rounded-[28px] border border-dashed border-slate-200 bg-white/92 p-10 text-center text-slate-500">
-              No bookings matched your filters.
+        <div className="mt-6 grid gap-6">
+          <section className="grid gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Approval queue</p>
+                <h2 className="text-2xl font-extrabold text-primary">Pending booking requests</h2>
+              </div>
+              <p className="text-sm text-slate-500">Approve or reject resource requests from here.</p>
             </div>
-          ) : (
-            bookings.map((booking) => (
-              <article key={booking.id} className="rounded-[32px] border border-sky-200/90 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <h2 className="text-2xl font-extrabold text-primary">{booking.resourceName}</h2>
-                    <p className="mt-2 text-sm text-slate-500">{booking.resourceType} • {booking.resourceLocation}</p>
-                    <p className="mt-2 text-sm text-slate-600">Requested by {booking.requesterName} ({booking.requesterEmail})</p>
-                    <p className="mt-2 text-sm text-slate-600">{booking.bookingDate} • {booking.startTime} - {booking.endTime}</p>
-                    <p className="mt-3 text-sm leading-7 text-slate-600">{booking.purpose}</p>
-                  </div>
-                  <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${bookingTone(booking.status)}`}>
-                    {booking.status}
-                  </span>
-                </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
-                    Expected attendees: <span className="font-semibold text-primary">{booking.expectedAttendees || "-"}</span>
-                  </div>
-                  <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
-                    Requested on: <span className="font-semibold text-primary">{new Date(booking.createdAt).toLocaleString()}</span>
-                  </div>
-                </div>
+            {pendingBookings.length === 0 ? (
+              <div className="rounded-[28px] border border-dashed border-amber-200 bg-amber-50/60 p-10 text-center text-amber-800">
+                No pending booking requests right now.
+              </div>
+            ) : (
+              pendingBookings.map((booking) => renderBookingCard(booking, true))
+            )}
+          </section>
 
-                {booking.adminReason ? (
-                  <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
-                    Admin reason: <span className="font-semibold text-primary">{booking.adminReason}</span>
-                  </div>
-                ) : null}
+          <section className="grid gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">History</p>
+                <h2 className="text-2xl font-extrabold text-primary">Reviewed and completed bookings</h2>
+              </div>
+              <p className="text-sm text-slate-500">Approved, rejected, and cancelled requests stay visible here.</p>
+            </div>
 
-                {booking.status === "PENDING" ? (
-                  <div className="mt-5 grid gap-3">
-                    <textarea
-                      rows={3}
-                      value={decisionNotes[booking.id] || ""}
-                      onChange={(event) =>
-                        setDecisionNotes((current) => ({
-                          ...current,
-                          [booking.id]: event.target.value,
-                        }))
-                      }
-                      placeholder="Optional approval note or required rejection reason"
-                      className={inputClasses}
-                    />
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleApprove(booking.id)}
-                        disabled={busyKey === `approve-${booking.id}`}
-                        className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-60"
-                      >
-                        {busyKey === `approve-${booking.id}` ? "Approving..." : "Approve"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleReject(booking.id)}
-                        disabled={busyKey === `reject-${booking.id}`}
-                        className="inline-flex items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-wait disabled:opacity-60"
-                      >
-                        {busyKey === `reject-${booking.id}` ? "Rejecting..." : "Reject"}
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-              </article>
-            ))
-          )}
-        </section>
+            {bookings.length === 0 ? (
+              <div className="rounded-[28px] border border-dashed border-slate-200 bg-white/92 p-10 text-center text-slate-500">
+                No bookings matched your filters.
+              </div>
+            ) : reviewedBookings.length === 0 ? (
+              <div className="rounded-[28px] border border-dashed border-slate-200 bg-white/92 p-10 text-center text-slate-500">
+                No reviewed bookings yet.
+              </div>
+            ) : (
+              reviewedBookings.map((booking) => renderBookingCard(booking))
+            )}
+          </section>
+        </div>
       )}
     </DashboardLayout>
   );
