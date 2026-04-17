@@ -14,6 +14,8 @@ import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "facility_resources")
@@ -27,7 +29,8 @@ public class FacilityResource {
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 50)
     private ResourceType type;
 
     @Column(nullable = false)
@@ -52,7 +55,8 @@ public class FacilityResource {
     private LocalTime availableToTime;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 50)
     private ResourceStatus status;
 
     @Column(length = 2000)
