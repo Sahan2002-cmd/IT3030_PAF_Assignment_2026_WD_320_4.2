@@ -153,10 +153,10 @@ function AdminDashboard({
         </section>
       ) : (
         <div className="grid gap-6">
-          <section className="relative overflow-hidden rounded-[36px] border border-white/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(30,41,59,0.90),rgba(14,165,233,0.76))] p-8 shadow-[0_28px_90px_rgba(15,23,42,0.20)] sm:p-10">
+          <section className="relative overflow-hidden rounded-[36px] border border-sky-200/60 bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(30,64,175,0.90),rgba(14,165,233,0.80))] p-8 shadow-[0_28px_90px_rgba(15,23,42,0.20)] sm:p-10">
             <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/90">
+                <div className="inline-flex items-center gap-2 rounded-full border border-sky-100/60 bg-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/90">
                   <ShieldCheck size={14} />
                   Admin control center
                 </div>
@@ -175,15 +175,15 @@ function AdminDashboard({
                 <button
                   type="button"
                   onClick={refreshAdminData}
-                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15"
+                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-sky-100/70 bg-white/12 px-6 py-4 text-sm font-semibold text-white transition hover:border-white/90 hover:bg-white/18"
                 >
                   Refresh overview
                 </button>
-                <Link to="/admin-reports" className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15">
+                <Link to="/admin-reports" className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-sky-100/70 bg-white/12 px-6 py-4 text-sm font-semibold text-white transition hover:border-white/90 hover:bg-white/18">
                   <FileText size={16} />
                   Reports
                 </Link>
-                <Link to="/admin-resources" className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15">
+                <Link to="/admin-resources" className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-sky-100/70 bg-white/12 px-6 py-4 text-sm font-semibold text-white transition hover:border-white/90 hover:bg-white/18">
                   <Boxes size={16} />
                   Resources
                 </Link>

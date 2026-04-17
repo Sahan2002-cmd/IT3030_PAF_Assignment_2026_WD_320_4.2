@@ -54,7 +54,7 @@ function DashboardLayout({
     <>
       <main className="min-h-screen px-4 py-8 sm:px-6">
         <section className="mx-auto w-full max-w-6xl">
-          <header className="relative z-20 overflow-visible rounded-[32px] border border-white/70 bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.10)] backdrop-blur sm:p-8">
+          <header className="relative z-20 overflow-visible rounded-[32px] border border-sky-200/90 bg-white/90 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.12)] backdrop-blur sm:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
                 <p className="text-sm font-semibold uppercase tracking-[0.28em] text-accent">{eyebrow}</p>
@@ -65,11 +65,11 @@ function DashboardLayout({
                   <span className="rounded-full bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white">
                     {user?.role}
                   </span>
-                  <span className="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-800">
+                  <span className="rounded-full border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-800">
                     {user?.email}
                   </span>
                   {user?.mobileNumber ? (
-                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">
+                    <span className="rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">
                       {user.mobileNumber}
                     </span>
                   ) : null}
@@ -82,7 +82,7 @@ function DashboardLayout({
                   <button
                     type="button"
                     onClick={handleToggleNotifications}
-                    className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-sky-200 bg-white text-primary transition hover:border-sky-300 hover:bg-sky-50"
+                    className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-sky-300 bg-white text-primary transition hover:border-sky-400 hover:bg-sky-50"
                     title="Notifications"
                     aria-label="Notifications"
                   >
@@ -95,7 +95,7 @@ function DashboardLayout({
                   </button>
 
                   {isNotificationsOpen ? (
-                    <div className="absolute right-0 top-[calc(100%+12px)] z-50 w-[340px] rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
+                    <div className="absolute right-0 top-[calc(100%+12px)] z-50 w-[340px] rounded-[24px] border border-sky-200 bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Notifications</p>
@@ -145,7 +145,7 @@ function DashboardLayout({
                 <button
                   type="button"
                   onClick={() => setIsProfileOpen(true)}
-                  className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-sky-200 bg-sky-50 text-sm font-bold text-primary transition hover:border-sky-300 hover:bg-sky-100"
+                  className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-sky-300 bg-sky-50 text-sm font-bold text-primary transition hover:border-sky-400 hover:bg-sky-100"
                   title="Edit profile"
                   aria-label="Edit profile"
                 >
@@ -154,7 +154,7 @@ function DashboardLayout({
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
+                  className="inline-flex items-center justify-center rounded-2xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-400 hover:bg-sky-50"
                 >
                   Logout
                 </button>
