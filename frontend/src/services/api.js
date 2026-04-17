@@ -114,6 +114,21 @@ export function createResource(payload, token) {
   });
 }
 
+export function updateResource(resourceId, payload, token) {
+  return apiRequest(`/api/admin/resources/${resourceId}`, {
+    method: "PATCH",
+    body: payload,
+    token,
+  });
+}
+
+export function deleteResource(resourceId, token) {
+  return apiRequest(`/api/admin/resources/${resourceId}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
 export function fetchResources(filters = {}, token) {
   const searchParams = new URLSearchParams();
 

@@ -56,6 +56,23 @@ public class AdminController {
         return ResponseEntity.ok(resourceService.createResource(request, adminUser));
     }
 
+    @PatchMapping("/resources/{resourceId}")
+    public ResponseEntity<ResourceResponse> updateResource(
+            @PathVariable Long resourceId,
+            @Valid @RequestBody CreateResourceRequest request,
+            @AuthenticationPrincipal AppUser adminUser
+    ) {
+        return ResponseEntity.ok(resourceService.updateResource(resourceId, request, adminUser));
+    }
+
+    @DeleteMapping("/resources/{resourceId}")
+    public ResponseEntity<MessageResponse> deleteResource(
+            @PathVariable Long resourceId,
+            @AuthenticationPrincipal AppUser adminUser
+    ) {
+        return ResponseEntity.ok(resourceService.deleteResource(resourceId, adminUser));
+    }
+
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<MessageResponse> deleteUser(
             @PathVariable Long userId,

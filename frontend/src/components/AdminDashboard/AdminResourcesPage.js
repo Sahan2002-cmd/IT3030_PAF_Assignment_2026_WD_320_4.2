@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../Common/DashboardLayout";
-import { createResource, fetchResources } from "../../services/api";
+import { createResource, deleteResource, fetchResources, updateResource } from "../../services/api";
 
 const initialForm = {
   name: "",
@@ -37,21 +37,55 @@ function formatAvailability(resource) {
   return `${formatDate(startDate)} to ${formatDate(endDate)}, ${resource.availableFromTime} - ${resource.availableToTime}`;
 }
 
+function toFormState(resource) {
+  if (!resource) {
+    return initialForm;
+  }
+
+  return {
+    name: resource.name || "",
+    type: resource.type || "LECTURE_HALL",
+    capacity: resource.capacity ? String(resource.capacity) : "",
+    location: resource.location || "",
+    availableFromDate: resource.availableFromDate || "",
+    availableToDate: resource.availableToDate || "",
+    availableFromTime: resource.availableFromTime ? resource.availableFromTime.slice(0, 5) : "",
+    availableToTime: resource.availableToTime ? resource.availableToTime.slice(0, 5) : "",
+    status: resource.status || "ACTIVE",
+    description: resource.description || "",
+    imageDataUrl: resource.imageDataUrl || "",
+  };
+}
+
 function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
   const [formData, setFormData] = useState(initialForm);
+  const [filters, setFilters] = useState({
+    type: "",
+    minCapacity: "",
+    location: "",
+    status: "",
+  });
   const [resources, setResources] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingResourceId, setEditingResourceId] = useState(null);
+  const [deletingResourceId, setDeletingResourceId] = useState(null);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const loadResources = useCallback(async (showLoading = true) => {
+  const loadResources = useCallback(async (nextFilters = filters, showLoading = true) => {
     if (showLoading) {
       setIsLoading(true);
     }
 
     try {
-      const data = await fetchResources({}, token);
+      const data = await fetchResources(
+        {
+          ...nextFilters,
+          minCapacity: nextFilters.minCapacity ? Number(nextFilters.minCapacity) : undefined,
+        },
+        token
+      );
       setResources(data);
       setError("");
     } catch (loadError) {
@@ -59,15 +93,23 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
     } finally {
       setIsLoading(false);
     }
-  }, [token]);
+  }, [filters, token]);
 
   useEffect(() => {
-    loadResources();
+    loadResources(filters);
   }, [loadResources]);
 
   function handleChange(event) {
     const { name, value } = event.target;
     setFormData((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  function handleFilterChange(event) {
+    const { name, value } = event.target;
+    setFilters((current) => ({
       ...current,
       [name]: value,
     }));
@@ -100,21 +142,70 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
     setSuccessMessage("");
 
     try {
-      const response = await createResource(
-        {
-          ...formData,
-          capacity: Number(formData.capacity),
-        },
-        token
-      );
+      const payload = {
+        ...formData,
+        capacity: Number(formData.capacity),
+      };
 
-      setSuccessMessage(`${response.name} was added to the catalogue.`);
+      const response = editingResourceId
+        ? await updateResource(editingResourceId, payload, token)
+        : await createResource(payload, token);
+
+      setSuccessMessage(
+        editingResourceId
+          ? `${response.name} was updated successfully.`
+          : `${response.name} was added to the catalogue.`
+      );
       setFormData(initialForm);
-      await loadResources(false);
+      setEditingResourceId(null);
+      await loadResources(filters, false);
     } catch (submitError) {
-      setError(submitError.message || "Failed to create resource.");
+      setError(submitError.message || `Failed to ${editingResourceId ? "update" : "create"} resource.`);
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleFilterSubmit(event) {
+    event.preventDefault();
+    await loadResources(filters, false);
+  }
+
+  function handleEditResource(resource) {
+    setEditingResourceId(resource.id);
+    setFormData(toFormState(resource));
+    setError("");
+    setSuccessMessage("");
+  }
+
+  function handleCancelEdit() {
+    setEditingResourceId(null);
+    setFormData(initialForm);
+    setError("");
+    setSuccessMessage("");
+  }
+
+  async function handleDeleteResource(resource) {
+    const confirmed = window.confirm(`Delete ${resource.name}? This action cannot be undone.`);
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingResourceId(resource.id);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      const response = await deleteResource(resource.id, token);
+      setSuccessMessage(response.message || "Resource deleted successfully.");
+      if (editingResourceId === resource.id) {
+        handleCancelEdit();
+      }
+      await loadResources(filters, false);
+    } catch (deleteError) {
+      setError(deleteError.message || "Failed to delete resource.");
+    } finally {
+      setDeletingResourceId(null);
     }
   }
 
@@ -137,10 +228,14 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
         </Link>
       }
     >
-      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid gap-6">
         <section className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Create resource</p>
-          <h2 className="mt-3 text-3xl font-extrabold text-primary">Add a catalogue item</h2>
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">
+            {editingResourceId ? "Edit resource" : "Create resource"}
+          </p>
+          <h2 className="mt-3 text-3xl font-extrabold text-primary">
+            {editingResourceId ? "Update catalogue item" : "Add a catalogue item"}
+          </h2>
           <p className="mt-3 text-sm leading-7 text-slate-500">
             Create bookable spaces and equipment with the metadata students need before booking workflows are added.
           </p>
@@ -286,29 +381,93 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
               <p className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-700">{successMessage}</p>
             ) : null}
 
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-4 text-base font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-70"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Saving resource..." : "Add resource"}
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-4 text-base font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-70"
+                disabled={isSubmitting}
+              >
+                {isSubmitting
+                  ? (editingResourceId ? "Updating resource..." : "Saving resource...")
+                  : (editingResourceId ? "Update resource" : "Add resource")}
+              </button>
+              {editingResourceId ? (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
+                >
+                  Cancel edit
+                </button>
+              ) : null}
+            </div>
           </form>
         </section>
 
         <section className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Catalogue</p>
-              <h2 className="mt-3 text-3xl font-extrabold text-primary">Existing resources</h2>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Catalogue</p>
+                <h2 className="mt-3 text-3xl font-extrabold text-primary">Existing resources</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => loadResources(filters, false)}
+                className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
+              >
+                Refresh
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => loadResources(false)}
-              className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
-            >
-              Refresh
-            </button>
+
+            <form className="grid gap-4 rounded-[28px] border border-slate-200 bg-slate-50/75 p-5 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]" onSubmit={handleFilterSubmit}>
+              <select
+                name="type"
+                value={filters.type}
+                onChange={handleFilterChange}
+                className={inputClasses}
+              >
+                <option value="">All types</option>
+                <option value="LECTURE_HALL">Lecture hall</option>
+                <option value="LAB">Lab</option>
+                <option value="MEETING_ROOM">Meeting room</option>
+                <option value="PROJECTOR">Projector</option>
+                <option value="CAMERA">Camera</option>
+                <option value="EQUIPMENT">Equipment</option>
+              </select>
+              <input
+                type="number"
+                min="1"
+                name="minCapacity"
+                value={filters.minCapacity}
+                onChange={handleFilterChange}
+                placeholder="Minimum capacity"
+                className={inputClasses}
+              />
+              <input
+                name="location"
+                value={filters.location}
+                onChange={handleFilterChange}
+                placeholder="Location"
+                className={inputClasses}
+              />
+              <select
+                name="status"
+                value={filters.status}
+                onChange={handleFilterChange}
+                className={inputClasses}
+              >
+                <option value="">Any status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="OUT_OF_SERVICE">Out of service</option>
+              </select>
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900"
+              >
+                Filter
+              </button>
+            </form>
           </div>
 
           {isLoading ? (
@@ -348,6 +507,23 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
                     {resource.description ? (
                       <p className="mt-2 text-sm leading-6 text-slate-600">{resource.description}</p>
                     ) : null}
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleEditResource(resource)}
+                        className="inline-flex items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-100"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteResource(resource)}
+                        className="inline-flex items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={deletingResourceId === resource.id}
+                      >
+                        {deletingResourceId === resource.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
                   </article>
                 ))
               )}

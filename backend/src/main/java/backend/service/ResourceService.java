@@ -1,6 +1,7 @@
 package backend.service;
 
 import backend.dto.CreateResourceRequest;
+import backend.dto.MessageResponse;
 import backend.dto.ResourceResponse;
 import backend.model.AppUser;
 import backend.model.FacilityResource;
@@ -34,22 +35,30 @@ public class ResourceService {
         requireAdmin(user);
 
         FacilityResource resource = new FacilityResource();
-        resource.setName(request.name().trim());
-        resource.setType(parseType(request.type()));
-        resource.setCapacity(request.capacity());
-        resource.setLocation(request.location().trim());
-        validateAvailabilityWindow(request);
-        resource.setAvailableFromDate(request.availableFromDate());
-        resource.setAvailableToDate(request.availableToDate());
-        resource.setAvailableFromTime(request.availableFromTime());
-        resource.setAvailableToTime(request.availableToTime());
-        resource.setAvailabilityWindows(formatAvailabilityWindow(request));
-        resource.setStatus(parseStatus(request.status()));
-        resource.setDescription(StringUtils.hasText(request.description()) ? request.description().trim() : null);
-        resource.setImageDataUrl(validateImageDataUrl(request.imageDataUrl()));
+        applyResourceDetails(resource, request);
 
         FacilityResource saved = facilityResourceRepository.save(resource);
         return toResponse(saved);
+    }
+
+    @Transactional
+    public ResourceResponse updateResource(Long resourceId, CreateResourceRequest request, AppUser user) {
+        requireAdmin(user);
+        FacilityResource resource = facilityResourceRepository.findById(resourceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found"));
+
+        applyResourceDetails(resource, request);
+        return toResponse(resource);
+    }
+
+    @Transactional
+    public MessageResponse deleteResource(Long resourceId, AppUser user) {
+        requireAdmin(user);
+        FacilityResource resource = facilityResourceRepository.findById(resourceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found"));
+
+        facilityResourceRepository.delete(resource);
+        return new MessageResponse("Resource deleted successfully.");
     }
 
     @Transactional(readOnly = true)
@@ -120,6 +129,22 @@ public class ResourceService {
                 resource.getCreatedAt(),
                 resource.getUpdatedAt()
         );
+    }
+
+    private void applyResourceDetails(FacilityResource resource, CreateResourceRequest request) {
+        resource.setName(request.name().trim());
+        resource.setType(parseType(request.type()));
+        resource.setCapacity(request.capacity());
+        resource.setLocation(request.location().trim());
+        validateAvailabilityWindow(request);
+        resource.setAvailableFromDate(request.availableFromDate());
+        resource.setAvailableToDate(request.availableToDate());
+        resource.setAvailableFromTime(request.availableFromTime());
+        resource.setAvailableToTime(request.availableToTime());
+        resource.setAvailabilityWindows(formatAvailabilityWindow(request));
+        resource.setStatus(parseStatus(request.status()));
+        resource.setDescription(StringUtils.hasText(request.description()) ? request.description().trim() : null);
+        resource.setImageDataUrl(validateImageDataUrl(request.imageDataUrl()));
     }
 
     private void validateAvailabilityWindow(CreateResourceRequest request) {
