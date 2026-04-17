@@ -58,20 +58,20 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
         </section>
       ) : (
         <div className="grid gap-6">
-          <section className="relative overflow-hidden rounded-[36px] border border-white/70 bg-[linear-gradient(135deg,rgba(2,132,199,0.92),rgba(14,165,233,0.86),rgba(255,255,255,0.92))] p-8 shadow-[0_28px_90px_rgba(14,165,233,0.20)] sm:p-10">
-            <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-2xl" />
-            <div className="absolute bottom-0 right-24 h-32 w-32 rounded-full bg-cyan-200/30 blur-2xl" />
+          <section className="relative overflow-hidden rounded-[36px] border border-white/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(30,41,59,0.90),rgba(14,165,233,0.76))] p-8 shadow-[0_28px_90px_rgba(15,23,42,0.20)] sm:p-10">
+            <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute bottom-0 right-24 h-32 w-32 rounded-full bg-sky-300/20 blur-2xl" />
 
             <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-sky-100/70 bg-white/28 px-4 py-2 text-xs font-bold uppercase tracking-[0.24em] text-white shadow-[0_8px_24px_rgba(15,23,42,0.14)] backdrop-blur-md">
+                <div className="inline-flex items-center gap-2 rounded-full border border-sky-100/60 bg-white/24 px-4 py-2 text-xs font-bold uppercase tracking-[0.24em] text-white shadow-[0_8px_24px_rgba(15,23,42,0.18)] backdrop-blur-md">
                   <Sparkles size={14} />
                   Student workspace
                 </div>
                 <h2 className="mt-5 text-4xl font-extrabold leading-tight text-white sm:text-5xl">
                   Welcome back, {user?.name}.
                 </h2>
-                <p className="mt-4 max-w-2xl text-base leading-7 text-sky-50/95">
+                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-100/90">
                   Keep your profile details in view here and use the ticket section whenever you need to report an issue,
                   upload evidence, or follow technician updates.
                 </p>
@@ -88,7 +88,7 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
                 <button
                   type="button"
                   onClick={() => loadDashboard(false)}
-                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/35 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15"
+                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15"
                 >
                   Refresh stats
                 </button>

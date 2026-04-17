@@ -59,17 +59,17 @@ function TechnicianDashboard({ user, token, notifications, onLogout, onMarkNotif
         </section>
       ) : (
         <div className="grid gap-6">
-          <section className="relative overflow-hidden rounded-[36px] border border-white/70 bg-[linear-gradient(135deg,rgba(8,145,178,0.92),rgba(6,182,212,0.84),rgba(255,255,255,0.92))] p-8 shadow-[0_28px_90px_rgba(6,182,212,0.18)] sm:p-10">
+          <section className="relative overflow-hidden rounded-[36px] border border-white/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(30,41,59,0.90),rgba(14,165,233,0.76))] p-8 shadow-[0_28px_90px_rgba(15,23,42,0.20)] sm:p-10">
             <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/90">
+                <div className="inline-flex items-center gap-2 rounded-full border border-sky-100/60 bg-white/24 px-4 py-2 text-xs font-bold uppercase tracking-[0.24em] text-white shadow-[0_8px_24px_rgba(15,23,42,0.18)] backdrop-blur-md">
                   <Wrench size={14} />
                   Technician workspace
                 </div>
                 <h2 className="mt-5 text-4xl font-extrabold leading-tight text-white sm:text-5xl">
                   Keep maintenance work clear, calm, and easy to manage.
                 </h2>
-                <p className="mt-4 max-w-2xl text-base leading-7 text-cyan-50/95">
+                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-100/90">
                   Review your account details here, then move into the dedicated tickets page to update statuses, add notes, and keep students informed.
                 </p>
               </div>
@@ -84,13 +84,13 @@ function TechnicianDashboard({ user, token, notifications, onLogout, onMarkNotif
                 <button
                   type="button"
                   onClick={() => loadDashboard(false)}
-                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/35 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15"
+                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15"
                 >
                   Refresh stats
                 </button>
                 <Link
                   to="/technician-reports"
-                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/35 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15"
+                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15"
                 >
                   <FileText size={16} />
                   Reports
