@@ -270,6 +270,7 @@ function App() {
               <ProtectedRoute session={session} requiredRole="STUDENT">
                 <StudentDashboard
                   user={session.user}
+                  token={session.token}
                   notifications={notifications}
                   onLogout={handleLogout}
                   onMarkNotificationsRead={handleMarkNotificationsRead}
@@ -284,6 +285,7 @@ function App() {
               <ProtectedRoute session={session} requiredRole="TECHNICIAN">
                 <TechnicianDashboard
                   user={session.user}
+                  token={session.token}
                   notifications={notifications}
                   onLogout={handleLogout}
                   onMarkNotificationsRead={handleMarkNotificationsRead}

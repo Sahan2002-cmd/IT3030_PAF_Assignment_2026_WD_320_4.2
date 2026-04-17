@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "../Common/DashboardLayout";
-import { approveTechnician, deleteUser, fetchAllUsers, fetchPendingTechnicians } from "../../services/api";
+import TicketWorkspace from "../Tickets/TicketWorkspace";
+import {
+  approveTechnician,
+  deleteUser,
+  fetchAllTickets,
+  fetchAllUsers,
+  fetchAssignableTechnicians,
+  fetchPendingTechnicians,
+} from "../../services/api";
 
 function AdminDashboard({
   user,
@@ -17,6 +25,9 @@ function AdminDashboard({
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [approvingId, setApprovingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [ticketDashboard, setTicketDashboard] = useState(null);
+  const [assignableTechnicians, setAssignableTechnicians] = useState([]);
+  const [isLoadingTickets, setIsLoadingTickets] = useState(true);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -54,9 +65,32 @@ function AdminDashboard({
     setError("");
 
     try {
-      await Promise.all([loadPendingTechnicians(false), loadAllUsers(false)]);
+      await Promise.all([
+        loadPendingTechnicians(false),
+        loadAllUsers(false),
+        loadTicketDashboard(false),
+      ]);
     } catch {
       // Individual loaders already surface their errors.
+    }
+  }
+
+  async function loadTicketDashboard(showLoading = true) {
+    if (showLoading) {
+      setIsLoadingTickets(true);
+    }
+
+    try {
+      const [ticketData, technicianData] = await Promise.all([
+        fetchAllTickets(token),
+        fetchAssignableTechnicians(token),
+      ]);
+      setTicketDashboard(ticketData);
+      setAssignableTechnicians(technicianData);
+    } catch (loadError) {
+      setError(loadError.message || "Failed to load tickets.");
+    } finally {
+      setIsLoadingTickets(false);
     }
   }
 
@@ -69,14 +103,18 @@ function AdminDashboard({
       setError("");
 
       try {
-        const [pendingData, usersData] = await Promise.all([
+        const [pendingData, usersData, ticketData, technicianData] = await Promise.all([
           fetchPendingTechnicians(token),
           fetchAllUsers(token),
+          fetchAllTickets(token),
+          fetchAssignableTechnicians(token),
         ]);
 
         if (isActive) {
           setPendingTechnicians(pendingData);
           setAllUsers(usersData);
+          setTicketDashboard(ticketData);
+          setAssignableTechnicians(technicianData);
         }
       } catch (loadError) {
         if (isActive) {
@@ -86,6 +124,7 @@ function AdminDashboard({
         if (isActive) {
           setIsLoadingApprovals(false);
           setIsLoadingUsers(false);
+          setIsLoadingTickets(false);
         }
       }
     }
@@ -308,6 +347,22 @@ function AdminDashboard({
           </div>
         ) : null}
       </section>
+
+      {isLoadingTickets ? (
+        <section className="mt-6 rounded-[28px] border border-dashed border-slate-200 bg-white/92 p-10 text-center text-slate-500">
+          Loading maintenance tickets...
+        </section>
+      ) : (
+        <TicketWorkspace
+          mode="admin"
+          user={user}
+          token={token}
+          dashboard={ticketDashboard}
+          technicians={assignableTechnicians}
+          onRefresh={() => loadTicketDashboard(false)}
+          showAssignment
+        />
+      )}
     </DashboardLayout>
   );
 }

@@ -1,42 +1,61 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "../Common/DashboardLayout";
+import TicketWorkspace from "../Tickets/TicketWorkspace";
+import { fetchMyTickets } from "../../services/api";
 
-function StudentDashboard({ user, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
+function StudentDashboard({ user, token, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
+  const [dashboard, setDashboard] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadDashboard = useCallback(async (showLoading = true) => {
+    if (showLoading) {
+      setIsLoading(true);
+    }
+
+    try {
+      const data = await fetchMyTickets(token);
+      setDashboard(data);
+      setError("");
+    } catch (loadError) {
+      setError(loadError.message || "Failed to load your tickets.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
   return (
     <DashboardLayout
       eyebrow="Student"
-      title="Dashboard"
-      description="Review your account details and keep your profile information up to date."
+      title="Incident ticketing"
+      description="Create maintenance tickets, track their status, and collaborate with technicians through updates and comments."
       user={user}
       notifications={notifications}
       onLogout={onLogout}
       onMarkNotificationsRead={onMarkNotificationsRead}
       onProfileUpdate={onProfileUpdate}
     >
-      <section className="rounded-[28px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] backdrop-blur sm:p-8">
-        <h2 className="text-2xl font-bold text-primary">Welcome back, {user?.name}</h2>
-        <p className="mt-4 max-w-3xl text-base leading-7 text-slate-500">
-          Your account is active and ready to use.
-        </p>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <article className="rounded-[24px] border border-sky-100 bg-sky-50/80 p-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Status</p>
-            <p className="mt-3 text-lg font-bold text-primary">Active</p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Your student account is available for normal sign-in and profile updates.
-            </p>
-          </article>
-
-          <article className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Profile</p>
-            <p className="mt-3 text-lg font-bold text-primary">Manage account details</p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Use the profile button in the top-right corner to update your information.
-            </p>
-          </article>
-        </div>
-      </section>
+      {error ? (
+        <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
+      ) : null}
+      {isLoading ? (
+        <section className="rounded-[28px] border border-dashed border-slate-200 bg-white/92 p-10 text-center text-slate-500">
+          Loading your tickets...
+        </section>
+      ) : (
+        <TicketWorkspace
+          mode="student"
+          user={user}
+          token={token}
+          dashboard={dashboard}
+          onRefresh={() => loadDashboard(false)}
+          allowCreate
+        />
+      )}
     </DashboardLayout>
   );
 }
