@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowRight, Clock3, Layers3, Sparkles, Ticket, Zap } from "lucide-react";
+import { ArrowRight, IdCard, Mail, Phone, ShieldCheck, Sparkles, Ticket, UserCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../Common/DashboardLayout";
 import { fetchMyTickets } from "../../services/api";
@@ -32,8 +32,8 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
   return (
     <DashboardLayout
       eyebrow="Student"
-      title="Student command center"
-      description="A cleaner home base for requests, activity, and progress before you jump into the full ticket workspace."
+      title="Student dashboard"
+      description="See your account details here, then jump into the ticket area whenever you want to create or track maintenance requests."
       user={user}
       notifications={notifications}
       onLogout={onLogout}
@@ -66,14 +66,14 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/90">
                   <Sparkles size={14} />
-                  Ready for quick action
+                  Student workspace
                 </div>
                 <h2 className="mt-5 text-4xl font-extrabold leading-tight text-white sm:text-5xl">
-                  Submit issues faster and follow every update without the clutter.
+                  Welcome back, {user?.name}.
                 </h2>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-sky-50/95">
-                  Your dashboard stays focused on what matters right now, while the full ticket center gives you creation,
-                  evidence uploads, comments, and tracking in one place.
+                  Keep your profile details in view here and use the ticket section whenever you need to report an issue,
+                  upload evidence, or follow technician updates.
                 </p>
               </div>
 
@@ -99,40 +99,38 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <article className="rounded-[28px] border border-sky-100 bg-white/92 p-6 shadow-[0_18px_45px_rgba(14,165,233,0.08)]">
               <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-primary">
-                <Layers3 size={18} />
+                <UserCircle2 size={18} />
               </div>
-              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-accent">Total tickets</p>
-              <p className="mt-3 text-4xl font-extrabold text-primary">{dashboard?.totalTickets || 0}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">All requests you have submitted so far.</p>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-accent">Full name</p>
+              <p className="mt-3 text-2xl font-extrabold text-primary">{user?.name || "-"}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">Your registered student account name.</p>
             </article>
 
             <article className="rounded-[28px] border border-amber-100 bg-white/92 p-6 shadow-[0_18px_45px_rgba(245,158,11,0.08)]">
               <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-                <Clock3 size={18} />
+                <Mail size={18} />
               </div>
-              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">Open now</p>
-              <p className="mt-3 text-4xl font-extrabold text-primary">{dashboard?.openTickets || 0}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">Tickets waiting for assignment or first action.</p>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">Email</p>
+              <p className="mt-3 break-all text-xl font-extrabold text-primary">{user?.email || "-"}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">Your login and account contact email.</p>
             </article>
 
             <article className="rounded-[28px] border border-cyan-100 bg-white/92 p-6 shadow-[0_18px_45px_rgba(6,182,212,0.08)]">
               <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700">
-                <Zap size={18} />
+                <Phone size={18} />
               </div>
-              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-cyan-700">In progress</p>
-              <p className="mt-3 text-4xl font-extrabold text-primary">{dashboard?.inProgressTickets || 0}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">Requests currently being worked on by technicians.</p>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-cyan-700">Mobile number</p>
+              <p className="mt-3 text-2xl font-extrabold text-primary">{user?.mobileNumber || "-"}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">Reachable contact detail for service updates.</p>
             </article>
 
             <article className="rounded-[28px] border border-emerald-100 bg-white/92 p-6 shadow-[0_18px_45px_rgba(16,185,129,0.08)]">
               <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                <Sparkles size={18} />
+                <ShieldCheck size={18} />
               </div>
-              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Completed</p>
-              <p className="mt-3 text-4xl font-extrabold text-primary">
-                {(dashboard?.resolvedTickets || 0) + (dashboard?.closedTickets || 0)}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">Resolved and closed issues that moved through the workflow.</p>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Account status</p>
+              <p className="mt-3 text-2xl font-extrabold text-primary">Active</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">Your student access is available and ready to use.</p>
             </article>
           </section>
 
@@ -140,70 +138,85 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
             <article className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Recent tickets</p>
-                  <h3 className="mt-3 text-3xl font-extrabold text-primary">Latest activity</h3>
+                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Profile details</p>
+                  <h3 className="mt-3 text-3xl font-extrabold text-primary">Account summary</h3>
                 </div>
                 <Link
                   to="/student-tickets"
                   className="inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-primary"
                 >
-                  View all tickets
+                  Go to tickets
                   <ArrowRight size={15} />
                 </Link>
               </div>
 
               <div className="mt-6 grid gap-4">
-                {dashboard?.tickets?.slice(0, 3).map((ticket) => (
-                  <article key={ticket.id} className="rounded-[24px] border border-slate-200 bg-slate-50/75 p-5">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <div className="flex flex-wrap gap-2">
-                          <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-white">
-                            {ticket.ticketNumber}
-                          </span>
-                          <span className="rounded-full bg-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-700">
-                            {ticket.category.replaceAll("_", " ")}
-                          </span>
-                        </div>
-                        <h4 className="mt-3 text-xl font-bold text-primary">{ticket.title}</h4>
-                        <p className="mt-2 text-sm leading-6 text-slate-500">
-                          {ticket.location} • {ticket.resourceName}
-                        </p>
-                      </div>
-                      <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-800">
-                        {ticket.status.replaceAll("_", " ")}
-                      </span>
+                <article className="rounded-[24px] border border-slate-200 bg-slate-50/75 p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-primary">
+                      <IdCard size={18} />
                     </div>
-                  </article>
-                ))}
-
-                {dashboard?.tickets?.length === 0 ? (
-                  <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center">
-                    <h4 className="text-xl font-bold text-primary">No tickets yet</h4>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">
-                      Start from the ticket center to create your first maintenance request.
-                    </p>
+                    <div>
+                      <h4 className="text-xl font-bold text-primary">Profile management</h4>
+                      <p className="mt-2 text-sm leading-6 text-slate-500">
+                        Use the profile icon at the top-right any time you want to update your name, email, phone number, or password.
+                      </p>
+                    </div>
                   </div>
-                ) : null}
+                </article>
+
+                <article className="rounded-[24px] border border-slate-200 bg-slate-50/75 p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                      <Ticket size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-primary">Ticket access</h4>
+                      <p className="mt-2 text-sm leading-6 text-slate-500">
+                        The ticket page is separate on purpose, so reporting issues and following maintenance updates feels focused and easy to manage.
+                      </p>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="rounded-[24px] border border-slate-200 bg-slate-50/75 p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                      <ShieldCheck size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-primary">Account readiness</h4>
+                      <p className="mt-2 text-sm leading-6 text-slate-500">
+                        Your student account is active and ready for sign-in, ticket submission, and communication with support staff.
+                      </p>
+                    </div>
+                  </div>
+                </article>
               </div>
             </article>
 
             <article className="rounded-[32px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(240,249,255,0.96))] p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Quick path</p>
-              <h3 className="mt-3 text-3xl font-extrabold text-primary">Go straight to tickets</h3>
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">Ticket snapshot</p>
+              <h3 className="mt-3 text-3xl font-extrabold text-primary">Quick ticket view</h3>
               <p className="mt-3 text-sm leading-7 text-slate-500">
-                The full ticket page is where you create requests, upload images, track comments, and refresh the latest status.
+                Your full ticket workflow is in the separate tickets page, but here is a quick summary before you open it.
               </p>
 
               <div className="mt-6 grid gap-3">
                 <div className="rounded-[24px] border border-slate-200 bg-white/85 p-4 text-sm leading-6 text-slate-600">
-                  Create incidents with category, priority, and contact details.
+                  Total tickets: <span className="font-semibold text-primary">{dashboard?.totalTickets || 0}</span>
                 </div>
                 <div className="rounded-[24px] border border-slate-200 bg-white/85 p-4 text-sm leading-6 text-slate-600">
-                  Upload up to three evidence images for each issue.
+                  Open tickets: <span className="font-semibold text-primary">{dashboard?.openTickets || 0}</span>
                 </div>
                 <div className="rounded-[24px] border border-slate-200 bg-white/85 p-4 text-sm leading-6 text-slate-600">
-                  Read technician updates and join the comment thread.
+                  In progress: <span className="font-semibold text-primary">{dashboard?.inProgressTickets || 0}</span>
+                </div>
+                <div className="rounded-[24px] border border-slate-200 bg-white/85 p-4 text-sm leading-6 text-slate-600">
+                  Resolved + closed:{" "}
+                  <span className="font-semibold text-primary">
+                    {(dashboard?.resolvedTickets || 0) + (dashboard?.closedTickets || 0)}
+                  </span>
                 </div>
               </div>
 
