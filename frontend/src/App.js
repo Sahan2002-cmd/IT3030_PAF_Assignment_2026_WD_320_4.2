@@ -3,12 +3,18 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
 import Login from "./components/Login/Login";
 import Register from "./components/Register/Register";
+import AboutPage from "./components/Public/AboutPage";
+import HomePage from "./components/Public/HomePage";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 import AdminApprovalsPage from "./components/AdminDashboard/AdminApprovalsPage";
+import AdminBookingsPage from "./components/AdminDashboard/AdminBookingsPage";
 import AdminReportsPage from "./components/Reports/AdminReportsPage";
+import AdminResourcesPage from "./components/AdminDashboard/AdminResourcesPage";
 import AdminTicketsPage from "./components/AdminDashboard/AdminTicketsPage";
 import AdminUsersPage from "./components/AdminDashboard/AdminUsersPage";
 import StudentDashboard from "./components/StudentDashboard/StudentDashboard";
+import StudentBookingsPage from "./components/StudentDashboard/StudentBookingsPage";
+import StudentResourcesPage from "./components/StudentDashboard/StudentResourcesPage";
 import StudentTicketsPage from "./components/StudentDashboard/StudentTicketsPage";
 import TechnicianReportsPage from "./components/Reports/TechnicianReportsPage";
 import TechnicianDashboard from "./components/TechnicianDashboard/TechnicianDashboard";
@@ -16,7 +22,7 @@ import TechnicianTicketsPage from "./components/TechnicianDashboard/TechnicianTi
 import ProtectedRoute from "./components/Common/ProtectedRoute";
 import LoadingScreen from "./components/Common/LoadingScreen";
 import { fetchCurrentUser, updateOwnProfile } from "./services/api";
-import { clearSession, loadSession, routeForRole, storeSession, updateStoredUser } from "./utils/auth";
+import { clearSession, loadSession, storeSession, updateStoredUser } from "./utils/auth";
 import { addNotification, loadNotifications, markAllNotificationsRead } from "./utils/notifications";
 
 function App() {
@@ -239,10 +245,10 @@ function App() {
     }
 
     if (session.user?.role) {
-      return <Navigate to={routeForRole(session.user.role)} replace />;
+      return <HomePage session={session} />;
     }
 
-    return <Navigate to="/login" replace />;
+    return <HomePage session={session} />;
   }
 
   return (
@@ -250,6 +256,8 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/" element={renderHome()} />
+          <Route path="/about" element={<AboutPage session={session} />} />
+          <Route path="/resources" element={<Navigate to="/student-resources" replace />} />
           <Route
             path="/login"
             element={<Login session={session} onLogin={handleLogin} />}
@@ -348,10 +356,70 @@ function App() {
             }
           />
           <Route
+            path="/admin-resources"
+            element={
+              <ProtectedRoute session={session} requiredRole="ADMIN">
+                <AdminResourcesPage
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-bookings"
+            element={
+              <ProtectedRoute session={session} requiredRole="ADMIN">
+                <AdminBookingsPage
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/student-tickets"
             element={
               <ProtectedRoute session={session} requiredRole="STUDENT">
                 <StudentTicketsPage
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student-resources"
+            element={
+              <ProtectedRoute session={session} requiredRole="STUDENT">
+                <StudentResourcesPage
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student-bookings"
+            element={
+              <ProtectedRoute session={session} requiredRole="STUDENT">
+                <StudentBookingsPage
                   user={session.user}
                   token={session.token}
                   notifications={notifications}

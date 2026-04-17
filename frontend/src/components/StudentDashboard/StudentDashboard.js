@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowRight, IdCard, Mail, Phone, ShieldCheck, Sparkles, Ticket, UserCircle2 } from "lucide-react";
+import { ArrowRight, Boxes, CalendarDays, IdCard, Mail, Phone, ShieldCheck, Sparkles, Ticket, UserCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../Common/DashboardLayout";
 import { fetchMyTickets } from "../../services/api";
@@ -40,13 +40,29 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
       onMarkNotificationsRead={onMarkNotificationsRead}
       onProfileUpdate={onProfileUpdate}
       actions={
-        <Link
-          to="/student-tickets"
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900"
-        >
-          <Ticket size={16} />
-          Tickets
-        </Link>
+        <>
+          <Link
+            to="/student-resources"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
+          >
+            <Boxes size={16} />
+            View resources
+          </Link>
+          <Link
+            to="/student-bookings"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-400 hover:bg-sky-50"
+          >
+            <CalendarDays size={16} />
+            My bookings
+          </Link>
+          <Link
+            to="/student-tickets"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900"
+          >
+            <Ticket size={16} />
+            Tickets
+          </Link>
+        </>
       }
     >
       {error ? (
@@ -58,13 +74,13 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
         </section>
       ) : (
         <div className="grid gap-6">
-          <section className="relative overflow-hidden rounded-[36px] border border-white/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(30,41,59,0.90),rgba(14,165,233,0.76))] p-8 shadow-[0_28px_90px_rgba(15,23,42,0.20)] sm:p-10">
+          <section className="relative overflow-hidden rounded-[36px] border border-sky-200/60 bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(30,64,175,0.90),rgba(14,165,233,0.80))] p-8 shadow-[0_28px_90px_rgba(15,23,42,0.20)] sm:p-10">
             <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute bottom-0 right-24 h-32 w-32 rounded-full bg-sky-300/20 blur-2xl" />
 
             <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-sky-100/60 bg-white/24 px-4 py-2 text-xs font-bold uppercase tracking-[0.24em] text-white shadow-[0_8px_24px_rgba(15,23,42,0.18)] backdrop-blur-md">
+                <div className="inline-flex items-center gap-2 rounded-full border border-sky-100/70 bg-white/16 px-4 py-2 text-xs font-bold uppercase tracking-[0.24em] text-white shadow-[0_8px_24px_rgba(15,23,42,0.18)] backdrop-blur-md">
                   <Sparkles size={14} />
                   Student workspace
                 </div>
@@ -85,13 +101,25 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
                   Open ticket center
                   <ArrowRight size={16} />
                 </Link>
+                <Link
+                  to="/student-resources"
+                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-sky-100/70 bg-white/12 px-6 py-4 text-sm font-semibold text-white transition hover:border-white/90 hover:bg-white/18"
+                >
+                  View resources
+                </Link>
                 <button
                   type="button"
                   onClick={() => loadDashboard(false)}
-                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15"
+                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-sky-100/70 bg-white/12 px-6 py-4 text-sm font-semibold text-white transition hover:border-white/90 hover:bg-white/18"
                 >
                   Refresh stats
                 </button>
+                <Link
+                  to="/student-bookings"
+                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-sky-100/70 bg-white/12 px-6 py-4 text-sm font-semibold text-white transition hover:border-white/90 hover:bg-white/18"
+                >
+                  My bookings
+                </Link>
               </div>
             </div>
           </section>
@@ -192,6 +220,34 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
                     </div>
                   </div>
                 </article>
+
+                <article className="rounded-[24px] border border-slate-200 bg-slate-50/75 p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700">
+                      <Boxes size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-primary">Resource catalogue</h4>
+                      <p className="mt-2 text-sm leading-6 text-slate-500">
+                        Use the resource view to browse lecture halls, labs, meeting rooms, and equipment with filters for type, capacity, and location.
+                      </p>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="rounded-[24px] border border-slate-200 bg-slate-50/75 p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-700">
+                      <CalendarDays size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-primary">Booking management</h4>
+                      <p className="mt-2 text-sm leading-6 text-slate-500">
+                        Request resource bookings with date, time range, purpose, and attendees, then track pending, approved, rejected, and cancelled requests in one place.
+                      </p>
+                    </div>
+                  </div>
+                </article>
               </div>
             </article>
 
@@ -226,6 +282,20 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
               >
                 Open tickets page
                 <ArrowRight size={16} />
+              </Link>
+
+              <Link
+                to="/student-resources"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[24px] border border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
+              >
+                View resource catalogue
+              </Link>
+
+              <Link
+                to="/student-bookings"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[24px] border border-red-200 bg-red-50 px-6 py-4 text-sm font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100"
+              >
+                Open my bookings
               </Link>
             </article>
           </section>

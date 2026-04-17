@@ -106,6 +106,107 @@ export function fetchMyTickets(token) {
   return apiRequest("/api/tickets/my", { token });
 }
 
+export function createResource(payload, token) {
+  return apiRequest("/api/admin/resources", {
+    method: "POST",
+    body: payload,
+    token,
+  });
+}
+
+export function updateResource(resourceId, payload, token) {
+  return apiRequest(`/api/admin/resources/${resourceId}`, {
+    method: "PATCH",
+    body: payload,
+    token,
+  });
+}
+
+export function deleteResource(resourceId, token) {
+  return apiRequest(`/api/admin/resources/${resourceId}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
+export function fetchResources(filters = {}, token) {
+  const searchParams = new URLSearchParams();
+
+  if (filters.type) {
+    searchParams.set("type", filters.type);
+  }
+
+  if (filters.minCapacity) {
+    searchParams.set("minCapacity", String(filters.minCapacity));
+  }
+
+  if (filters.location) {
+    searchParams.set("location", filters.location);
+  }
+
+  if (filters.status) {
+    searchParams.set("status", filters.status);
+  }
+
+  const query = searchParams.toString();
+  return apiRequest(`/api/resources${query ? `?${query}` : ""}`, { token });
+}
+
+export function createBooking(payload, token) {
+  return apiRequest("/api/bookings", {
+    method: "POST",
+    body: payload,
+    token,
+  });
+}
+
+export function fetchMyBookings(token) {
+  return apiRequest("/api/bookings/my", { token });
+}
+
+export function cancelBooking(bookingId, payload, token) {
+  return apiRequest(`/api/bookings/${bookingId}/cancel`, {
+    method: "PATCH",
+    body: payload,
+    token,
+  });
+}
+
+export function fetchAllBookings(filters = {}, token) {
+  const searchParams = new URLSearchParams();
+
+  if (filters.status) {
+    searchParams.set("status", filters.status);
+  }
+
+  if (filters.resourceId) {
+    searchParams.set("resourceId", String(filters.resourceId));
+  }
+
+  if (filters.requester) {
+    searchParams.set("requester", filters.requester);
+  }
+
+  const query = searchParams.toString();
+  return apiRequest(`/api/admin/bookings${query ? `?${query}` : ""}`, { token });
+}
+
+export function approveBooking(bookingId, payload, token) {
+  return apiRequest(`/api/admin/bookings/${bookingId}/approve`, {
+    method: "PATCH",
+    body: payload,
+    token,
+  });
+}
+
+export function rejectBooking(bookingId, payload, token) {
+  return apiRequest(`/api/admin/bookings/${bookingId}/reject`, {
+    method: "PATCH",
+    body: payload,
+    token,
+  });
+}
+
 export function fetchAssignedTickets(token) {
   return apiRequest("/api/tickets/assigned", { token });
 }

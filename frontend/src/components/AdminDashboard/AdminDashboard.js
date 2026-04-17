@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ArrowRight, CheckCircle2, FileText, ShieldCheck, Ticket, UserCog, UserRoundCheck, Users } from "lucide-react";
+import { ArrowRight, Boxes, CalendarDays, CheckCircle2, FileText, ShieldCheck, Ticket, UserCog, UserRoundCheck, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../Common/DashboardLayout";
 import {
@@ -153,10 +153,10 @@ function AdminDashboard({
         </section>
       ) : (
         <div className="grid gap-6">
-          <section className="relative overflow-hidden rounded-[36px] border border-white/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(30,41,59,0.90),rgba(14,165,233,0.76))] p-8 shadow-[0_28px_90px_rgba(15,23,42,0.20)] sm:p-10">
+          <section className="relative overflow-hidden rounded-[36px] border border-sky-200/60 bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(30,64,175,0.90),rgba(14,165,233,0.80))] p-8 shadow-[0_28px_90px_rgba(15,23,42,0.20)] sm:p-10">
             <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/90">
+                <div className="inline-flex items-center gap-2 rounded-full border border-sky-100/60 bg-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/90">
                   <ShieldCheck size={14} />
                   Admin control center
                 </div>
@@ -169,19 +169,27 @@ function AdminDashboard({
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 <Link to="/admin-tickets" className="inline-flex items-center justify-center gap-2 rounded-[22px] bg-white px-6 py-4 text-sm font-semibold text-primary transition hover:bg-sky-50">
-                  Ticket management
+                  Tickets
                   <ArrowRight size={16} />
                 </Link>
                 <button
                   type="button"
                   onClick={refreshAdminData}
-                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15"
+                  className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-sky-100/70 bg-white/12 px-6 py-4 text-sm font-semibold text-white transition hover:border-white/90 hover:bg-white/18"
                 >
                   Refresh overview
                 </button>
-                <Link to="/admin-reports" className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/25 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15">
+                <Link to="/admin-reports" className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-sky-100/70 bg-white/12 px-6 py-4 text-sm font-semibold text-white transition hover:border-white/90 hover:bg-white/18">
                   <FileText size={16} />
                   Reports
+                </Link>
+                <Link to="/admin-resources" className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-sky-100/70 bg-white/12 px-6 py-4 text-sm font-semibold text-white transition hover:border-white/90 hover:bg-white/18">
+                  <Boxes size={16} />
+                  Resources
+                </Link>
+                <Link to="/admin-bookings" className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-sky-100/70 bg-white/12 px-6 py-4 text-sm font-semibold text-white transition hover:border-white/90 hover:bg-white/18">
+                  <CalendarDays size={16} />
+                  Bookings
                 </Link>
               </div>
             </div>
@@ -247,6 +255,26 @@ function AdminDashboard({
               <p className="mt-3 text-sm leading-7 text-slate-500">Generate exports and summary reports for tickets, users, and the approval queue from one dedicated report center.</p>
               <Link to="/admin-reports" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-primary">
                 Open reports
+                <ArrowRight size={15} />
+              </Link>
+            </article>
+
+            <article className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700"><Boxes size={20} /></div>
+              <h3 className="mt-5 text-2xl font-extrabold text-primary">Resource catalogue</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-500">Create and review lecture halls, labs, meeting rooms, and equipment for Module A from a dedicated management page.</p>
+              <Link to="/admin-resources" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-primary">
+                Open resource management
+                <ArrowRight size={15} />
+              </Link>
+            </article>
+
+            <article className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)] sm:p-8">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-700"><CalendarDays size={20} /></div>
+              <h3 className="mt-5 text-2xl font-extrabold text-primary">Booking requests</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-500">Review pending resource requests, approve or reject them with reasons, and monitor the full booking workflow.</p>
+              <Link to="/admin-bookings" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-primary">
+                Open booking management
                 <ArrowRight size={15} />
               </Link>
             </article>

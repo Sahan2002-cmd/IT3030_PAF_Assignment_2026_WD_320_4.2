@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { signupUser } from "../../services/api";
 import { isValidMobileNumber, isValidPassword, MOBILE_NUMBER_RULE_TEXT, PASSWORD_RULE_TEXT } from "../../utils/validation";
+import PublicLayout from "../Public/PublicLayout";
 
 const initialForm = {
   name: "",
@@ -85,8 +86,9 @@ function Register() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-10 sm:px-6">
-      <section className="mx-auto w-full max-w-3xl rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.10)] backdrop-blur sm:p-8">
+    <PublicLayout session={{ user: null }}>
+      <main className="min-h-screen px-4 py-10 sm:px-6">
+        <section className="mx-auto w-full max-w-3xl rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.10)] backdrop-blur sm:p-8">
           <div className="mb-8">
             <p className="text-sm font-semibold uppercase tracking-[0.32em] text-accent">Campus Hub</p>
             <h1 className="mt-4 text-4xl font-extrabold leading-tight text-primary">Create account</h1>
@@ -224,8 +226,9 @@ function Register() {
               {isSubmitting ? "Creating account..." : "Create account"}
             </button>
           </form>
-      </section>
-    </main>
+        </section>
+      </main>
+    </PublicLayout>
   );
 }
 
