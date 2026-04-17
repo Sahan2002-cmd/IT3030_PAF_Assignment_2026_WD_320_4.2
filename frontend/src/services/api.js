@@ -80,6 +80,17 @@ export function updateOwnProfile(payload, token) {
   });
 }
 
+export function fetchMyNotifications(token) {
+  return apiRequest("/api/notifications/me", { token });
+}
+
+export function markNotificationsRead(token) {
+  return apiRequest("/api/notifications/me/read-all", {
+    method: "PATCH",
+    token,
+  });
+}
+
 export function fetchPendingTechnicians(token) {
   return apiRequest("/api/admin/technicians/pending", { token });
 }
