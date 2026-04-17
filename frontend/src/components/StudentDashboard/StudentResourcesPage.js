@@ -21,6 +21,101 @@ const emptyBookingForm = {
   expectedAttendees: "",
 };
 
+function formatTimeLabel(value) {
+  if (!value) {
+    return "";
+  }
+
+  const [hours, minutes] = value.slice(0, 5).split(":");
+  const date = new Date();
+  date.setHours(Number(hours), Number(minutes), 0, 0);
+  return date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function toMinutes(value) {
+  if (!value) {
+    return 0;
+  }
+
+  const [hours, minutes] = value.slice(0, 5).split(":");
+  return Number(hours) * 60 + Number(minutes);
+}
+
+function fromMinutes(totalMinutes) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function formatDateLabel(value) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function listDates(startDate, endDate) {
+  const dates = [];
+  const cursor = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+
+  while (cursor <= end) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return dates;
+}
+
+function buildSlotSummaries(resource) {
+  if (!resource.availableFromDate || !resource.availableToDate || !resource.availableFromTime || !resource.availableToTime) {
+    return [];
+  }
+
+  const startMinutes = toMinutes(resource.availableFromTime);
+  const endMinutes = toMinutes(resource.availableToTime);
+  const dates = listDates(resource.availableFromDate, resource.availableToDate);
+  const slots = [];
+
+  dates.forEach((date) => {
+    for (let slotStart = startMinutes; slotStart < endMinutes; slotStart += 120) {
+      const slotEnd = Math.min(slotStart + 120, endMinutes);
+      const overlappingBookings = (resource.bookings || []).filter((booking) => {
+        if (booking.bookingDate !== date) {
+          return false;
+        }
+
+        const bookingStart = toMinutes(booking.startTime);
+        const bookingEnd = toMinutes(booking.endTime);
+        return bookingStart < slotEnd && bookingEnd > slotStart;
+      });
+
+      const approvedBooked = overlappingBookings
+        .filter((booking) => booking.status === "APPROVED")
+        .reduce((sum, booking) => sum + (booking.expectedAttendees || 0), 0);
+
+      const pendingRequested = overlappingBookings
+        .filter((booking) => booking.status === "PENDING")
+        .reduce((sum, booking) => sum + (booking.expectedAttendees || 0), 0);
+
+      slots.push({
+        date,
+        startTime: fromMinutes(slotStart),
+        endTime: fromMinutes(slotEnd),
+        approvedBooked,
+        pendingRequested,
+        remainingCapacity: Math.max((resource.capacity || 0) - approvedBooked, 0),
+      });
+    }
+  });
+
+  return slots;
+}
+
 function formatAvailability(resource) {
   if (!resource.availableFromDate || !resource.availableToDate || !resource.availableFromTime || !resource.availableToTime) {
     return resource.availabilityWindows;
@@ -333,6 +428,37 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                           No bookings yet for this resource.
                         </div>
                       )}
+                    </div>
+                  </div>
+
+                  <div className="mt-5">
+                    <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Available time slots</p>
+                    <div className="mt-3 grid gap-3">
+                      {buildSlotSummaries(resource).map((slot) => (
+                        <div key={`${resource.id}-${slot.date}-${slot.startTime}`} className="rounded-[20px] border border-sky-200 bg-white px-4 py-3">
+                          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                            <div>
+                              <p className="text-sm font-semibold text-primary">
+                                {formatDateLabel(slot.date)} • {formatTimeLabel(slot.startTime)} - {formatTimeLabel(slot.endTime)}
+                              </p>
+                              <p className="mt-1 text-xs text-slate-500">
+                                Remaining capacity: {slot.remainingCapacity} / {resource.capacity}
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+                                Booked: {slot.approvedBooked}
+                              </span>
+                              <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                                Pending: {slot.pendingRequested}
+                              </span>
+                              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                Left: {slot.remainingCapacity}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </article>
