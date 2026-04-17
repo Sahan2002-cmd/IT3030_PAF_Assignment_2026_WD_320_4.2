@@ -3,7 +3,7 @@ import { BarChart3, Download, FileText, Printer, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../Common/DashboardLayout";
 import { fetchAssignedTickets } from "../../services/api";
-import { downloadFile, formatReportDate, statusLabel, toCsv } from "./reportUtils";
+import { downloadFile, escapeHtml, formatReportDate, openPrintDocument, statusLabel, toCsv } from "./reportUtils";
 
 function TechnicianReportsPage({ user, token, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
   const [dashboard, setDashboard] = useState(null);
@@ -48,23 +48,54 @@ function TechnicianReportsPage({ user, token, notifications, onLogout, onMarkNot
     downloadFile("technician-ticket-report.csv", toCsv(rows), "text/csv;charset=utf-8;");
   }
 
-  function downloadSummaryText() {
-    const content = [
-      "Campus Hub Technician Report",
-      `Generated: ${formatReportDate()}`,
-      `Technician: ${user?.name || ""}`,
-      "",
-      `Assigned total: ${dashboard?.totalTickets || 0}`,
-      `Open: ${dashboard?.openTickets || 0}`,
-      `In progress: ${dashboard?.inProgressTickets || 0}`,
-      `Resolved: ${dashboard?.resolvedTickets || 0}`,
-      `Closed: ${dashboard?.closedTickets || 0}`,
-      "",
-      "Recent assigned tickets:",
-      ...(dashboard?.tickets || []).slice(0, 10).map((ticket) => `- ${ticket.ticketNumber}: ${ticket.title} [${statusLabel(ticket.status)}]`),
-    ].join("\n");
+  function exportPdfReport() {
+    const rows = (dashboard?.tickets || [])
+      .slice(0, 12)
+      .map(
+        (ticket) => `
+          <tr>
+            <td>${escapeHtml(ticket.ticketNumber)}</td>
+            <td>${escapeHtml(ticket.title)}</td>
+            <td>${escapeHtml(statusLabel(ticket.status))}</td>
+            <td>${escapeHtml(statusLabel(ticket.priority))}</td>
+            <td>${escapeHtml(ticket.location)}</td>
+            <td>${escapeHtml(ticket.createdByName)}</td>
+          </tr>`
+      )
+      .join("");
 
-    downloadFile("technician-report.txt", content, "text/plain;charset=utf-8;");
+    openPrintDocument({
+      title: "Technician Work Report",
+      subtitle: `Generated on ${formatReportDate()} for ${user?.name || "Technician"}. Use the browser print dialog and choose Save as PDF for a polished PDF export.`,
+      bodyHtml: `
+        <section class="section">
+          <h2>Performance snapshot</h2>
+          <div class="grid">
+            <div class="stat"><div class="label">Assigned total</div><div class="value">${dashboard?.totalTickets || 0}</div></div>
+            <div class="stat"><div class="label">Open</div><div class="value">${dashboard?.openTickets || 0}</div></div>
+            <div class="stat"><div class="label">In progress</div><div class="value">${dashboard?.inProgressTickets || 0}</div></div>
+            <div class="stat"><div class="label">Resolved</div><div class="value">${dashboard?.resolvedTickets || 0}</div></div>
+            <div class="stat"><div class="label">Closed</div><div class="value">${dashboard?.closedTickets || 0}</div></div>
+          </div>
+        </section>
+        <section class="section">
+          <h2>Assigned ticket details</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Ticket</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Location</th>
+                <th>Student</th>
+              </tr>
+            </thead>
+            <tbody>${rows || '<tr><td colspan="6">No assigned tickets available.</td></tr>'}</tbody>
+          </table>
+        </section>
+      `,
+    });
   }
 
   return (
@@ -106,7 +137,7 @@ function TechnicianReportsPage({ user, token, notifications, onLogout, onMarkNot
                   Turn assigned work into clear, shareable reports.
                 </h2>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-cyan-50/95">
-                  Export a ticket CSV, generate a quick text summary, or print the current report view for meetings and follow-up.
+                  Export a ticket CSV, generate a professional PDF-ready report, or print the current report view for meetings and follow-up.
                 </p>
               </div>
 
@@ -121,11 +152,11 @@ function TechnicianReportsPage({ user, token, notifications, onLogout, onMarkNot
                 </button>
                 <button
                   type="button"
-                  onClick={downloadSummaryText}
+                  onClick={exportPdfReport}
                   className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/35 bg-white/10 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/15"
                 >
                   <FileText size={16} />
-                  Download summary
+                  Export PDF
                 </button>
               </div>
             </div>

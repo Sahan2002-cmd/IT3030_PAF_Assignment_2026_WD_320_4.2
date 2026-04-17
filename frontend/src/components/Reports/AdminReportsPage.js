@@ -3,7 +3,7 @@ import { BarChart3, ClipboardList, Download, FileText, Printer, ShieldCheck, Use
 import { Link } from "react-router-dom";
 import DashboardLayout from "../Common/DashboardLayout";
 import { fetchAllTickets, fetchAllUsers, fetchPendingTechnicians } from "../../services/api";
-import { downloadFile, formatReportDate, statusLabel, toCsv } from "./reportUtils";
+import { downloadFile, escapeHtml, formatReportDate, openPrintDocument, statusLabel, toCsv } from "./reportUtils";
 
 function AdminReportsPage({ user, token, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
   const [tickets, setTickets] = useState(null);
@@ -71,26 +71,63 @@ function AdminReportsPage({ user, token, notifications, onLogout, onMarkNotifica
     downloadFile("admin-user-report.csv", toCsv(rows), "text/csv;charset=utf-8;");
   }
 
-  function downloadSummaryText() {
-    const content = [
-      "Campus Hub Admin Report",
-      `Generated: ${formatReportDate()}`,
-      `Admin: ${user?.name || ""}`,
-      "",
-      `Total users: ${users.length}`,
-      `Pending approvals: ${pendingTechnicians.length}`,
-      `Total tickets: ${tickets?.totalTickets || 0}`,
-      `Open tickets: ${tickets?.openTickets || 0}`,
-      `In progress tickets: ${tickets?.inProgressTickets || 0}`,
-      `Resolved tickets: ${tickets?.resolvedTickets || 0}`,
-      `Closed tickets: ${tickets?.closedTickets || 0}`,
-      `Rejected tickets: ${tickets?.rejectedTickets || 0}`,
-      "",
-      "Pending technicians:",
-      ...pendingTechnicians.map((account) => `- ${account.name} (${account.email})`),
-    ].join("\n");
+  function exportPdfReport() {
+    const ticketRows = (tickets?.tickets || [])
+      .slice(0, 10)
+      .map(
+        (ticket) => `
+          <tr>
+            <td>${escapeHtml(ticket.ticketNumber)}</td>
+            <td>${escapeHtml(ticket.title)}</td>
+            <td>${escapeHtml(statusLabel(ticket.status))}</td>
+            <td>${escapeHtml(ticket.createdByName)}</td>
+            <td>${escapeHtml(ticket.assignedTechnicianName || "Unassigned")}</td>
+          </tr>`
+      )
+      .join("");
 
-    downloadFile("admin-report-summary.txt", content, "text/plain;charset=utf-8;");
+    const approvalItems = pendingTechnicians.length
+      ? `<ul class="muted-list">${pendingTechnicians
+          .map((account) => `<li>${escapeHtml(account.name)} (${escapeHtml(account.email)})</li>`)
+          .join("")}</ul>`
+      : `<p class="small">No pending technician approvals at the moment.</p>`;
+
+    openPrintDocument({
+      title: "Admin Operations Report",
+      subtitle: `Generated on ${formatReportDate()} for ${user?.name || "Admin"}. Use the browser print dialog and choose Save as PDF for a professional PDF export.`,
+      bodyHtml: `
+        <section class="section">
+          <h2>Executive snapshot</h2>
+          <div class="grid">
+            <div class="stat"><div class="label">Total users</div><div class="value">${users.length}</div></div>
+            <div class="stat"><div class="label">Pending approvals</div><div class="value">${pendingTechnicians.length}</div></div>
+            <div class="stat"><div class="label">All tickets</div><div class="value">${tickets?.totalTickets || 0}</div></div>
+            <div class="stat"><div class="label">Open</div><div class="value">${tickets?.openTickets || 0}</div></div>
+            <div class="stat"><div class="label">Resolved</div><div class="value">${tickets?.resolvedTickets || 0}</div></div>
+            <div class="stat"><div class="label">Rejected</div><div class="value">${tickets?.rejectedTickets || 0}</div></div>
+          </div>
+        </section>
+        <section class="section">
+          <h2>Recent ticket operations</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Ticket</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Created by</th>
+                <th>Assigned technician</th>
+              </tr>
+            </thead>
+            <tbody>${ticketRows || '<tr><td colspan="5">No tickets available.</td></tr>'}</tbody>
+          </table>
+        </section>
+        <section class="section">
+          <h2>Pending approval queue</h2>
+          ${approvalItems}
+        </section>
+      `,
+    });
   }
 
   return (
@@ -132,18 +169,18 @@ function AdminReportsPage({ user, token, notifications, onLogout, onMarkNotifica
                   Create executive-style snapshots for people, tickets, and approvals.
                 </h2>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-100/90">
-                  Export clean CSVs, download a summary text report, or print the current report view for reviews and admin follow-up.
+                  Export clean CSVs, generate a PDF-ready summary report, or print the current report view for reviews and admin follow-up.
                 </p>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <button
                   type="button"
-                  onClick={downloadSummaryText}
+                  onClick={exportPdfReport}
                   className="inline-flex items-center justify-center gap-2 rounded-[22px] bg-white px-6 py-4 text-sm font-semibold text-primary transition hover:bg-sky-50"
                 >
                   <FileText size={16} />
-                  Download summary
+                  Export PDF
                 </button>
                 <button
                   type="button"

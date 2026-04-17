@@ -64,7 +64,7 @@ function StudentDashboard({ user, token, notifications, onLogout, onMarkNotifica
 
             <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/90">
+                <div className="inline-flex items-center gap-2 rounded-full border border-sky-100/70 bg-white/28 px-4 py-2 text-xs font-bold uppercase tracking-[0.24em] text-white shadow-[0_8px_24px_rgba(15,23,42,0.14)] backdrop-blur-md">
                   <Sparkles size={14} />
                   Student workspace
                 </div>

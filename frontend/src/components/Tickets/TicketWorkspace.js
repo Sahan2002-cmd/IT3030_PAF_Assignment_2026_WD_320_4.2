@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Camera, CheckCircle2, ClipboardList, MapPin, MessageSquare, RefreshCw, Send, Sparkles, Wrench } from "lucide-react";
+import { Camera, CheckCircle2, ClipboardList, FileText, MapPin, MessageSquare, RefreshCw, Send, Sparkles, Wrench } from "lucide-react";
 import {
   addTicketComment,
   assignTicket,
@@ -16,6 +16,7 @@ import {
   TICKET_CATEGORIES,
   TICKET_PRIORITIES,
 } from "./ticketOptions";
+import { escapeHtml, formatReportDate, openPrintDocument, statusLabel } from "../Reports/reportUtils";
 
 const emptyCreateForm = {
   title: "",
@@ -209,6 +210,67 @@ function TicketWorkspace({
 
   function draftAssignmentFor(ticket) {
     return assignmentDrafts[ticket.id] || ticket.assignedTechnicianId || "";
+  }
+
+  function printTicketReport(ticket) {
+    const commentRows = (ticket.comments || [])
+      .map(
+        (comment) => `
+          <tr>
+            <td>${escapeHtml(comment.authorName)}</td>
+            <td>${escapeHtml(statusLabel(comment.authorRole))}</td>
+            <td>${escapeHtml(comment.body)}</td>
+            <td>${escapeHtml(formatDate(comment.updatedAt || comment.createdAt))}</td>
+          </tr>`
+      )
+      .join("");
+
+    openPrintDocument({
+      title: `Student Ticket Report - ${ticket.ticketNumber}`,
+      subtitle: `Generated on ${formatReportDate()} for ${user?.name || "Student"}. Use the browser print dialog and choose Save as PDF if you want a PDF copy.`,
+      bodyHtml: `
+        <section class="section">
+          <h2>Ticket summary</h2>
+          <div class="grid">
+            <div class="card"><div class="label">Ticket number</div><div class="value">${escapeHtml(ticket.ticketNumber)}</div></div>
+            <div class="card"><div class="label">Status</div><div class="value">${escapeHtml(statusLabel(ticket.status))}</div></div>
+            <div class="card"><div class="label">Priority</div><div class="value">${escapeHtml(statusLabel(ticket.priority))}</div></div>
+            <div class="card"><div class="label">Category</div><div class="value">${escapeHtml(statusLabel(ticket.category))}</div></div>
+          </div>
+        </section>
+        <section class="section">
+          <h2>Incident details</h2>
+          <div class="small">
+            <p><strong>Title:</strong> ${escapeHtml(ticket.title)}</p>
+            <p><strong>Resource:</strong> ${escapeHtml(ticket.resourceName)}</p>
+            <p><strong>Location:</strong> ${escapeHtml(ticket.location)}</p>
+            <p><strong>Preferred contact:</strong> ${escapeHtml(ticket.preferredContactName)} • ${escapeHtml(ticket.preferredContactEmail)} • ${escapeHtml(ticket.preferredContactPhone)}</p>
+            <p><strong>Description:</strong> ${escapeHtml(ticket.description)}</p>
+            <p><strong>Assigned technician:</strong> ${escapeHtml(ticket.assignedTechnicianName || "Unassigned")}</p>
+          </div>
+        </section>
+        ${(ticket.resolutionNotes || ticket.rejectionReason) ? `
+          <section class="section">
+            <h2>Outcome notes</h2>
+            ${ticket.resolutionNotes ? `<p class="small"><strong>Resolution notes:</strong> ${escapeHtml(ticket.resolutionNotes)}</p>` : ""}
+            ${ticket.rejectionReason ? `<p class="small"><strong>Rejection reason:</strong> ${escapeHtml(ticket.rejectionReason)}</p>` : ""}
+          </section>` : ""}
+        <section class="section">
+          <h2>Comment log</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Author</th>
+                <th>Role</th>
+                <th>Comment</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>${commentRows || '<tr><td colspan="4">No comments recorded.</td></tr>'}</tbody>
+          </table>
+        </section>
+      `,
+    });
   }
 
   return (
@@ -458,6 +520,16 @@ function TicketWorkspace({
                   <p className="mt-2">{ticket.preferredContactPhone}</p>
                   <p className="mt-4 text-xs text-slate-400">Created {formatDate(ticket.createdAt)}</p>
                   <p className="mt-1 text-xs text-slate-400">Updated {formatDate(ticket.updatedAt)}</p>
+                  {mode === "student" ? (
+                    <button
+                      type="button"
+                      onClick={() => printTicketReport(ticket)}
+                      className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-primary transition hover:border-sky-300 hover:bg-sky-50"
+                    >
+                      <FileText size={14} />
+                      Print ticket report
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </div>
