@@ -8,10 +8,34 @@ const initialForm = {
   type: "LECTURE_HALL",
   capacity: "",
   location: "",
-  availabilityWindows: "",
+  availableFromDate: "",
+  availableToDate: "",
+  availableFromTime: "",
+  availableToTime: "",
   status: "ACTIVE",
   description: "",
+  imageDataUrl: "",
 };
+
+const inputClasses =
+  "w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-base text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10";
+
+function formatAvailability(resource) {
+  if (!resource.availableFromDate || !resource.availableToDate || !resource.availableFromTime || !resource.availableToTime) {
+    return resource.availabilityWindows;
+  }
+
+  const startDate = new Date(`${resource.availableFromDate}T00:00:00`);
+  const endDate = new Date(`${resource.availableToDate}T00:00:00`);
+  const formatDate = (value) =>
+    value.toLocaleDateString(undefined, {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+  return `${formatDate(startDate)} to ${formatDate(endDate)}, ${resource.availableFromTime} - ${resource.availableToTime}`;
+}
 
 function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
   const [formData, setFormData] = useState(initialForm);
@@ -47,6 +71,26 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
       ...current,
       [name]: value,
     }));
+  }
+
+  function handleImageChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setFormData((current) => ({
+        ...current,
+        imageDataUrl: "",
+      }));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormData((current) => ({
+        ...current,
+        imageDataUrl: typeof reader.result === "string" ? reader.result : "",
+      }));
+    };
+    reader.readAsDataURL(file);
   }
 
   async function handleSubmit(event) {
@@ -107,7 +151,7 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
               value={formData.name}
               onChange={handleChange}
               placeholder="Resource name"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-base text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
+              className={inputClasses}
               required
             />
 
@@ -116,7 +160,7 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
                 name="type"
                 value={formData.type}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-base text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
+                className={inputClasses}
               >
                 <option value="LECTURE_HALL">Lecture hall</option>
                 <option value="LAB">Lab</option>
@@ -133,7 +177,7 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
                 value={formData.capacity}
                 onChange={handleChange}
                 placeholder="Capacity"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-base text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
+                className={inputClasses}
                 required
               />
             </div>
@@ -143,25 +187,65 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
               value={formData.location}
               onChange={handleChange}
               placeholder="Location"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-base text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
+              className={inputClasses}
               required
             />
 
-            <textarea
-              name="availabilityWindows"
-              value={formData.availabilityWindows}
-              onChange={handleChange}
-              placeholder="Availability windows, for example Mon-Fri 08:00-16:00"
-              rows={4}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-base text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
-              required
-            />
+            <div className="rounded-[28px] border border-slate-200 bg-slate-50/70 p-5">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Availability window</p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <label className="grid gap-2">
+                  <span className="text-sm font-semibold text-primary">Available from date</span>
+                  <input
+                    type="date"
+                    name="availableFromDate"
+                    value={formData.availableFromDate}
+                    onChange={handleChange}
+                    className={inputClasses}
+                    required
+                  />
+                </label>
+                <label className="grid gap-2">
+                  <span className="text-sm font-semibold text-primary">Available to date</span>
+                  <input
+                    type="date"
+                    name="availableToDate"
+                    value={formData.availableToDate}
+                    onChange={handleChange}
+                    className={inputClasses}
+                    required
+                  />
+                </label>
+                <label className="grid gap-2">
+                  <span className="text-sm font-semibold text-primary">Start time</span>
+                  <input
+                    type="time"
+                    name="availableFromTime"
+                    value={formData.availableFromTime}
+                    onChange={handleChange}
+                    className={inputClasses}
+                    required
+                  />
+                </label>
+                <label className="grid gap-2">
+                  <span className="text-sm font-semibold text-primary">End time</span>
+                  <input
+                    type="time"
+                    name="availableToTime"
+                    value={formData.availableToTime}
+                    onChange={handleChange}
+                    className={inputClasses}
+                    required
+                  />
+                </label>
+              </div>
+            </div>
 
             <select
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-base text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
+              className={inputClasses}
             >
               <option value="ACTIVE">Active</option>
               <option value="OUT_OF_SERVICE">Out of service</option>
@@ -173,8 +257,27 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
               onChange={handleChange}
               placeholder="Optional notes"
               rows={3}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-base text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
+              className={inputClasses}
             />
+
+            <div className="grid gap-3">
+              <label className="grid gap-2">
+                <span className="text-sm font-semibold text-primary">Resource image</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className={inputClasses}
+                />
+              </label>
+              {formData.imageDataUrl ? (
+                <img
+                  src={formData.imageDataUrl}
+                  alt="Resource preview"
+                  className="h-48 w-full rounded-[24px] object-cover"
+                />
+              ) : null}
+            </div>
 
             {error ? (
               <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
@@ -221,6 +324,13 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
               ) : (
                 resources.map((resource) => (
                   <article key={resource.id} className="rounded-[24px] border border-slate-200 bg-slate-50/75 p-5">
+                    {resource.imageDataUrl ? (
+                      <img
+                        src={resource.imageDataUrl}
+                        alt={resource.name}
+                        className="mb-4 h-48 w-full rounded-[22px] object-cover"
+                      />
+                    ) : null}
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <h3 className="text-xl font-bold text-primary">{resource.name}</h3>
@@ -234,7 +344,7 @@ function AdminResourcesPage({ user, token, notifications, onLogout, onMarkNotifi
                       </div>
                     </div>
                     <p className="mt-4 text-sm leading-6 text-slate-600">Capacity: {resource.capacity}</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">Availability: {resource.availabilityWindows}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Availability: {formatAvailability(resource)}</p>
                     {resource.description ? (
                       <p className="mt-2 text-sm leading-6 text-slate-600">{resource.description}</p>
                     ) : null}

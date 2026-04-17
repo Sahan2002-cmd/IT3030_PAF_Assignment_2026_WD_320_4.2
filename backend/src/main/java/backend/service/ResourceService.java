@@ -8,6 +8,7 @@ import backend.model.ResourceStatus;
 import backend.model.ResourceType;
 import backend.model.Role;
 import backend.repository.FacilityResourceRepository;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ResourceService {
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMM yyyy");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a");
 
     private final FacilityResourceRepository facilityResourceRepository;
 
@@ -34,9 +38,15 @@ public class ResourceService {
         resource.setType(parseType(request.type()));
         resource.setCapacity(request.capacity());
         resource.setLocation(request.location().trim());
-        resource.setAvailabilityWindows(request.availabilityWindows().trim());
+        validateAvailabilityWindow(request);
+        resource.setAvailableFromDate(request.availableFromDate());
+        resource.setAvailableToDate(request.availableToDate());
+        resource.setAvailableFromTime(request.availableFromTime());
+        resource.setAvailableToTime(request.availableToTime());
+        resource.setAvailabilityWindows(formatAvailabilityWindow(request));
         resource.setStatus(parseStatus(request.status()));
         resource.setDescription(StringUtils.hasText(request.description()) ? request.description().trim() : null);
+        resource.setImageDataUrl(validateImageDataUrl(request.imageDataUrl()));
 
         FacilityResource saved = facilityResourceRepository.save(resource);
         return toResponse(saved);
@@ -100,10 +110,48 @@ public class ResourceService {
                 resource.getCapacity(),
                 resource.getLocation(),
                 resource.getAvailabilityWindows(),
+                resource.getAvailableFromDate(),
+                resource.getAvailableToDate(),
+                resource.getAvailableFromTime(),
+                resource.getAvailableToTime(),
                 resource.getStatus().name(),
                 resource.getDescription(),
+                resource.getImageDataUrl(),
                 resource.getCreatedAt(),
                 resource.getUpdatedAt()
         );
+    }
+
+    private void validateAvailabilityWindow(CreateResourceRequest request) {
+        if (request.availableToDate().isBefore(request.availableFromDate())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Available to date must be on or after available from date");
+        }
+
+        boolean sameDay = request.availableFromDate().isEqual(request.availableToDate());
+        if (sameDay && !request.availableToTime().isAfter(request.availableFromTime())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Available to time must be after available from time on the same day");
+        }
+    }
+
+    private String validateImageDataUrl(String imageDataUrl) {
+        if (!StringUtils.hasText(imageDataUrl)) {
+            return null;
+        }
+
+        String trimmed = imageDataUrl.trim();
+        if (!trimmed.startsWith("data:image/")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resource image must be an image data URL");
+        }
+        return trimmed;
+    }
+
+    private String formatAvailabilityWindow(CreateResourceRequest request) {
+        return request.availableFromDate().format(DATE_FORMATTER)
+                + " to "
+                + request.availableToDate().format(DATE_FORMATTER)
+                + ", "
+                + request.availableFromTime().format(TIME_FORMATTER)
+                + " - "
+                + request.availableToTime().format(TIME_FORMATTER);
     }
 }

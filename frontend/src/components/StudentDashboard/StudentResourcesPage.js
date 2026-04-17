@@ -10,6 +10,33 @@ const initialFilters = {
   status: "",
 };
 
+function formatAvailability(resource) {
+  if (!resource.availableFromDate || !resource.availableToDate || !resource.availableFromTime || !resource.availableToTime) {
+    return resource.availabilityWindows;
+  }
+
+  const startDate = new Date(`${resource.availableFromDate}T00:00:00`);
+  const endDate = new Date(`${resource.availableToDate}T00:00:00`);
+  const formatDate = (value) =>
+    value.toLocaleDateString(undefined, {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+  const formatTime = (value) => {
+    const [hours, minutes] = value.split(":");
+    const date = new Date();
+    date.setHours(Number(hours), Number(minutes), 0, 0);
+    return date.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  return `${formatDate(startDate)} to ${formatDate(endDate)}, ${formatTime(resource.availableFromTime)} - ${formatTime(resource.availableToTime)}`;
+}
+
 function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNotificationsRead, onProfileUpdate }) {
   const [filters, setFilters] = useState(initialFilters);
   const [resources, setResources] = useState([]);
@@ -145,6 +172,13 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
             ) : (
               resources.map((resource) => (
                 <article key={resource.id} className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+                  {resource.imageDataUrl ? (
+                    <img
+                      src={resource.imageDataUrl}
+                      alt={resource.name}
+                      className="mb-5 h-56 w-full rounded-[24px] object-cover"
+                    />
+                  ) : null}
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div>
                       <h2 className="text-2xl font-extrabold text-primary">{resource.name}</h2>
@@ -163,7 +197,7 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                       Capacity: <span className="font-semibold text-primary">{resource.capacity}</span>
                     </div>
                     <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 sm:col-span-2">
-                      Availability: <span className="font-semibold text-primary">{resource.availabilityWindows}</span>
+                      Availability: <span className="font-semibold text-primary">{formatAvailability(resource)}</span>
                     </div>
                   </div>
 
