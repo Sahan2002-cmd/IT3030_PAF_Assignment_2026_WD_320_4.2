@@ -21,6 +21,14 @@ const emptyBookingForm = {
   expectedAttendees: "",
 };
 
+function isSameSlot(bookingForm, slot) {
+  return (
+    bookingForm.bookingDate === slot.date &&
+    bookingForm.startTime === slot.startTime &&
+    bookingForm.endTime === slot.endTime
+  );
+}
+
 function formatTimeLabel(value) {
   if (!value) {
     return "";
@@ -191,6 +199,25 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
   async function handleSubmit(event) {
     event.preventDefault();
     await loadResources(filters, false);
+  }
+
+  function handleSelectSlot(resourceId, slot) {
+    setActiveBookingResourceId(resourceId);
+    setBookingForm((current) => ({
+      bookingDate: slot.date,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      purpose:
+        activeBookingResourceId === resourceId && isSameSlot(current, slot)
+          ? current.purpose
+          : "",
+      expectedAttendees:
+        activeBookingResourceId === resourceId && isSameSlot(current, slot)
+          ? current.expectedAttendees
+          : "",
+    }));
+    setError("");
+    setSuccessMessage("");
   }
 
   function bookingTone(status) {
@@ -372,18 +399,9 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                   ) : null}
 
                   <div className="mt-5 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveBookingResourceId(resource.id);
-                        setBookingForm(emptyBookingForm);
-                        setError("");
-                        setSuccessMessage("");
-                      }}
-                      className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-900"
-                    >
-                      Request booking
-                    </button>
+                    <span className="inline-flex items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700">
+                      Choose a slot below to book
+                    </span>
                     <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
                       Max 3 hours per booking
                     </span>
@@ -391,18 +409,24 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
 
                   {activeBookingResourceId === resource.id ? (
                     <form className="mt-5 grid gap-4 rounded-[24px] border border-sky-200 bg-white p-5" onSubmit={(event) => handleBookingSubmit(event, resource.id)}>
-                      <div className="grid gap-4 sm:grid-cols-3">
-                        <input type="date" value={bookingForm.bookingDate} onChange={(event) => setBookingForm((current) => ({ ...current, bookingDate: event.target.value }))} className={inputClasses} required />
-                        <input type="time" value={bookingForm.startTime} onChange={(event) => setBookingForm((current) => ({ ...current, startTime: event.target.value }))} className={inputClasses} required />
-                        <input type="time" value={bookingForm.endTime} onChange={(event) => setBookingForm((current) => ({ ...current, endTime: event.target.value }))} className={inputClasses} required />
+                      <div className="rounded-[20px] border border-sky-200 bg-sky-50/70 px-4 py-3 text-sm text-sky-900">
+                        <p className="font-semibold">Selected slot</p>
+                        <p className="mt-1">
+                          {bookingForm.bookingDate && bookingForm.startTime && bookingForm.endTime
+                            ? `${formatDateLabel(bookingForm.bookingDate)} - ${formatTimeLabel(bookingForm.startTime)} to ${formatTimeLabel(bookingForm.endTime)}`
+                            : "Choose one of the available slots below."}
+                        </p>
                       </div>
                       <textarea rows={3} value={bookingForm.purpose} onChange={(event) => setBookingForm((current) => ({ ...current, purpose: event.target.value }))} placeholder="Purpose of the booking" className={inputClasses} required />
                       <input type="number" min="1" value={bookingForm.expectedAttendees} onChange={(event) => setBookingForm((current) => ({ ...current, expectedAttendees: event.target.value }))} placeholder="Expected attendees" className={inputClasses} />
                       <div className="flex flex-wrap gap-3">
-                        <button type="submit" disabled={isSubmittingBooking} className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-60">
+                        <button type="submit" disabled={isSubmittingBooking || !bookingForm.bookingDate || !bookingForm.startTime || !bookingForm.endTime} className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-60">
                           {isSubmittingBooking ? "Submitting..." : "Submit request"}
                         </button>
-                        <button type="button" onClick={() => setActiveBookingResourceId(null)} className="inline-flex items-center justify-center rounded-2xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-400 hover:bg-sky-50">
+                        <button type="button" onClick={() => {
+                          setActiveBookingResourceId(null);
+                          setBookingForm(emptyBookingForm);
+                        }} className="inline-flex items-center justify-center rounded-2xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-primary transition hover:border-sky-400 hover:bg-sky-50">
                           Cancel
                         </button>
                       </div>
@@ -417,7 +441,7 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                           <div key={booking.id} className={`rounded-[20px] border px-4 py-3 text-sm ${bookingTone(booking.status)}`}>
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <span className="font-semibold">{booking.status}</span>
-                              <span>{booking.bookingDate} • {booking.startTime} - {booking.endTime}</span>
+                              <span>{booking.bookingDate} - {booking.startTime} to {booking.endTime}</span>
                             </div>
                             <p className="mt-2">{booking.requesterName}: {booking.purpose}</p>
                             {booking.adminReason ? <p className="mt-1 text-xs opacity-80">Reason: {booking.adminReason}</p> : null}
@@ -435,11 +459,18 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                     <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Available time slots</p>
                     <div className="mt-3 grid gap-3">
                       {buildSlotSummaries(resource).map((slot) => (
-                        <div key={`${resource.id}-${slot.date}-${slot.startTime}`} className="rounded-[20px] border border-sky-200 bg-white px-4 py-3">
+                        <div
+                          key={`${resource.id}-${slot.date}-${slot.startTime}`}
+                          className={`rounded-[20px] border px-4 py-3 transition ${
+                            activeBookingResourceId === resource.id && isSameSlot(bookingForm, slot)
+                              ? "border-primary bg-sky-100 shadow-[0_12px_32px_rgba(37,99,235,0.14)]"
+                              : "border-sky-200 bg-white"
+                          }`}
+                        >
                           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                             <div>
                               <p className="text-sm font-semibold text-primary">
-                                {formatDateLabel(slot.date)} • {formatTimeLabel(slot.startTime)} - {formatTimeLabel(slot.endTime)}
+                                {formatDateLabel(slot.date)} - {formatTimeLabel(slot.startTime)} to {formatTimeLabel(slot.endTime)}
                               </p>
                               <p className="mt-1 text-xs text-slate-500">
                                 Remaining capacity: {slot.remainingCapacity} / {resource.capacity}
@@ -455,6 +486,14 @@ function StudentResourcesPage({ user, token, notifications, onLogout, onMarkNoti
                               <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                                 Left: {slot.remainingCapacity}
                               </span>
+                              <button
+                                type="button"
+                                disabled={resource.status !== "ACTIVE" || slot.remainingCapacity <= 0}
+                                onClick={() => handleSelectSlot(resource.id, slot)}
+                                className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-900 disabled:cursor-not-allowed disabled:bg-slate-300"
+                              >
+                                {resource.status !== "ACTIVE" ? "Unavailable" : slot.remainingCapacity <= 0 ? "Full" : "Book this slot"}
+                              </button>
                             </div>
                           </div>
                         </div>
