@@ -1,6 +1,7 @@
 package backend.service;
 
 import backend.model.AppUser;
+import backend.model.IncidentTicket;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -72,6 +73,55 @@ public class NotificationEmailService {
                 """.formatted(user.getName());
 
         sendEmail(recipients, "Campus Hub approval notification", message);
+    }
+
+    public void sendTicketStatusUpdate(IncidentTicket ticket, AppUser updatedBy, String previousStatus) {
+        if (ticket == null || ticket.getCreatedBy() == null) {
+            return;
+        }
+
+        LinkedHashSet<String> recipients = new LinkedHashSet<>();
+        addRecipient(recipients, ticket.getCreatedBy().getEmail());
+        addRecipient(recipients, ticket.getPreferredContactEmail());
+
+        String actorName = updatedBy != null ? updatedBy.getName() : "Campus Hub";
+        String actorRole = updatedBy != null ? updatedBy.getRole().name() : "SYSTEM";
+        String resolutionSection = StringUtils.hasText(ticket.getResolutionNotes())
+                ? "\nResolution notes:\n" + ticket.getResolutionNotes().trim() + "\n"
+                : "";
+        String rejectionSection = StringUtils.hasText(ticket.getRejectionReason())
+                ? "\nRejection reason:\n" + ticket.getRejectionReason().trim() + "\n"
+                : "";
+
+        String message = """
+                Hello %s,
+
+                Your maintenance ticket has been updated in Campus Hub.
+
+                Ticket number: %s
+                Title: %s
+                Previous status: %s
+                New status: %s
+                Updated by: %s (%s)
+                Assigned technician: %s
+                %s%s
+                Please sign in to Campus Hub if you want to review the full ticket conversation.
+
+                Campus Hub
+                """.formatted(
+                ticket.getCreatedBy().getName(),
+                ticket.getTicketNumber(),
+                ticket.getTitle(),
+                previousStatus,
+                ticket.getStatus().name(),
+                actorName,
+                actorRole,
+                ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getName() : "Not assigned",
+                resolutionSection,
+                rejectionSection
+        );
+
+        sendEmail(recipients, "Campus Hub ticket status update", message);
     }
 
     private void addRecipient(Collection<String> recipients, String email) {

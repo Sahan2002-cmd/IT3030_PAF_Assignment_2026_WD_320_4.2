@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8080";
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8081";
 
 async function apiRequest(path, { method = "GET", body, token } = {}) {
   const headers = {
@@ -97,6 +97,77 @@ export function approveTechnician(technicianId, token) {
 
 export function deleteUser(userId, token) {
   return apiRequest(`/api/admin/users/${userId}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
+export function fetchMyTickets(token) {
+  return apiRequest("/api/tickets/my", { token });
+}
+
+export function fetchAssignedTickets(token) {
+  return apiRequest("/api/tickets/assigned", { token });
+}
+
+export function fetchAllTickets(token) {
+  return apiRequest("/api/admin/tickets", { token });
+}
+
+export function fetchAssignableTechnicians(token) {
+  return apiRequest("/api/admin/tickets/technicians", { token });
+}
+
+export function createTicket(payload, token) {
+  return apiRequest("/api/tickets", {
+    method: "POST",
+    body: payload,
+    token,
+  });
+}
+
+export function updateTicketStatus(ticketId, payload, token) {
+  return apiRequest(`/api/tickets/${ticketId}/status`, {
+    method: "PATCH",
+    body: payload,
+    token,
+  });
+}
+
+export function assignTicket(ticketId, payload, token) {
+  return apiRequest(`/api/admin/tickets/${ticketId}/assign`, {
+    method: "PATCH",
+    body: payload,
+    token,
+  });
+}
+
+export function rejectTicket(ticketId, payload, token) {
+  return apiRequest(`/api/admin/tickets/${ticketId}/reject`, {
+    method: "PATCH",
+    body: payload,
+    token,
+  });
+}
+
+export function addTicketComment(ticketId, payload, token) {
+  return apiRequest(`/api/tickets/${ticketId}/comments`, {
+    method: "POST",
+    body: payload,
+    token,
+  });
+}
+
+export function updateTicketComment(commentId, payload, token) {
+  return apiRequest(`/api/tickets/comments/${commentId}`, {
+    method: "PATCH",
+    body: payload,
+    token,
+  });
+}
+
+export function deleteTicketComment(commentId, token) {
+  return apiRequest(`/api/tickets/comments/${commentId}`, {
     method: "DELETE",
     token,
   });

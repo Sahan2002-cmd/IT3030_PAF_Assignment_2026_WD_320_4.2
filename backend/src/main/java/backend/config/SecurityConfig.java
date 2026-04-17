@@ -48,13 +48,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
-                                "/api/auth/signup",
-                                "/api/auth/login",
-                                "/api/auth/google",
-                                "/api/auth/forgot-password",
-                                "/api/auth/reset-password"
+                                "/auth/signup",
+                                "/auth/login",
+                                "/auth/google",
+                                "/auth/forgot-password",
+                                "/auth/reset-password"
                         ).permitAll()
-                        .requestMatchers("/api/admin/**").hasRole(Role.ADMIN.name())
+                        .requestMatchers("/admin/**").hasRole(Role.ADMIN.name())
                         .anyRequest().authenticated()
                 );
 

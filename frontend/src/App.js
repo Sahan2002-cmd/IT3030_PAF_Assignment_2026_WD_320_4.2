@@ -4,8 +4,15 @@ import "./App.css";
 import Login from "./components/Login/Login";
 import Register from "./components/Register/Register";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
+import AdminApprovalsPage from "./components/AdminDashboard/AdminApprovalsPage";
+import AdminReportsPage from "./components/Reports/AdminReportsPage";
+import AdminTicketsPage from "./components/AdminDashboard/AdminTicketsPage";
+import AdminUsersPage from "./components/AdminDashboard/AdminUsersPage";
 import StudentDashboard from "./components/StudentDashboard/StudentDashboard";
+import StudentTicketsPage from "./components/StudentDashboard/StudentTicketsPage";
+import TechnicianReportsPage from "./components/Reports/TechnicianReportsPage";
 import TechnicianDashboard from "./components/TechnicianDashboard/TechnicianDashboard";
+import TechnicianTicketsPage from "./components/TechnicianDashboard/TechnicianTicketsPage";
 import ProtectedRoute from "./components/Common/ProtectedRoute";
 import LoadingScreen from "./components/Common/LoadingScreen";
 import { fetchCurrentUser, updateOwnProfile } from "./services/api";
@@ -270,6 +277,83 @@ function App() {
               <ProtectedRoute session={session} requiredRole="STUDENT">
                 <StudentDashboard
                   user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-tickets"
+            element={
+              <ProtectedRoute session={session} requiredRole="ADMIN">
+                <AdminTicketsPage
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-users"
+            element={
+              <ProtectedRoute session={session} requiredRole="ADMIN">
+                <AdminUsersPage
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-approvals"
+            element={
+              <ProtectedRoute session={session} requiredRole="ADMIN">
+                <AdminApprovalsPage
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onRefreshUser={handleRefreshUser}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-reports"
+            element={
+              <ProtectedRoute session={session} requiredRole="ADMIN">
+                <AdminReportsPage
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student-tickets"
+            element={
+              <ProtectedRoute session={session} requiredRole="STUDENT">
+                <StudentTicketsPage
+                  user={session.user}
+                  token={session.token}
                   notifications={notifications}
                   onLogout={handleLogout}
                   onMarkNotificationsRead={handleMarkNotificationsRead}
@@ -284,6 +368,37 @@ function App() {
               <ProtectedRoute session={session} requiredRole="TECHNICIAN">
                 <TechnicianDashboard
                   user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/technician-tickets"
+            element={
+              <ProtectedRoute session={session} requiredRole="TECHNICIAN">
+                <TechnicianTicketsPage
+                  user={session.user}
+                  token={session.token}
+                  notifications={notifications}
+                  onLogout={handleLogout}
+                  onMarkNotificationsRead={handleMarkNotificationsRead}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/technician-reports"
+            element={
+              <ProtectedRoute session={session} requiredRole="TECHNICIAN">
+                <TechnicianReportsPage
+                  user={session.user}
+                  token={session.token}
                   notifications={notifications}
                   onLogout={handleLogout}
                   onMarkNotificationsRead={handleMarkNotificationsRead}
