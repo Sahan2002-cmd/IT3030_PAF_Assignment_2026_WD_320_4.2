@@ -64,34 +64,63 @@ public class ResourceService {
      * Flexible search: any combination of type, location, status.
      * All parameters are optional — omit to return everything.
      */
+    // @Transactional(readOnly = true)
+    // public List<ResourceDTO.Response> searchResources(String type,
+    //                                                   String location,
+    //                                                   ResourceStatus status) {
+    //     List<Resource> results;
+
+    //     if (type != null && location != null) {
+    //         results = resourceRepository.findByTypeAndLocation(type.toUpperCase(), location);
+    //     } else if (type != null) {
+    //         results = resourceRepository.findByType(type.toUpperCase());
+    //     } else if (location != null) {
+    //         results = resourceRepository.findByLocation(location);
+    //     } else if (status != null) {
+    //         results = resourceRepository.findByStatus(status);
+    //     } else {
+    //         results = resourceRepository.findAll();
+    //     }
+
+    //     // Apply status post-filter if both type/location AND status are given
+    //     if (status != null && (type != null || location != null)) {
+    //         final ResourceStatus finalStatus = status;
+    //         results = results.stream()
+    //                 .filter(r -> r.getStatus() == finalStatus)
+    //                 .collect(Collectors.toList());
+    //     }
+
+    //     return results.stream().map(this::toResponse).collect(Collectors.toList());
+    // }
+
     @Transactional(readOnly = true)
-    public List<ResourceDTO.Response> searchResources(String type,
-                                                      String location,
-                                                      ResourceStatus status) {
-        List<Resource> results;
+public List<ResourceDTO.Response> searchResources(String type,
+                                                  String location,
+                                                  ResourceStatus status) {
+    List<Resource> results;
 
-        if (type != null && location != null) {
-            results = resourceRepository.findByTypeAndLocation(type.toUpperCase(), location);
-        } else if (type != null) {
-            results = resourceRepository.findByType(type.toUpperCase());
-        } else if (location != null) {
-            results = resourceRepository.findByLocation(location);
-        } else if (status != null) {
-            results = resourceRepository.findByStatus(status);
-        } else {
-            results = resourceRepository.findAll();
-        }
-
-        // Apply status post-filter if both type/location AND status are given
-        if (status != null && (type != null || location != null)) {
-            final ResourceStatus finalStatus = status;
-            results = results.stream()
-                    .filter(r -> r.getStatus() == finalStatus)
-                    .collect(Collectors.toList());
-        }
-
-        return results.stream().map(this::toResponse).collect(Collectors.toList());
+    if (type != null && location != null) {
+        results = resourceRepository.findByTypeAndLocationContainingIgnoreCase(type.toUpperCase(), location);
+    } else if (type != null) {
+        results = resourceRepository.findByType(type.toUpperCase());
+    } else if (location != null) {
+        results = resourceRepository.findByLocationContainingIgnoreCase(location);
+    } else if (status != null) {
+        results = resourceRepository.findByStatus(status);
+    } else {
+        results = resourceRepository.findAll();
     }
+
+    // Apply status post-filter if both type/location AND status are given
+    if (status != null && (type != null || location != null)) {
+        final ResourceStatus finalStatus = status;
+        results = results.stream()
+                .filter(r -> r.getStatus() == finalStatus)
+                .collect(Collectors.toList());
+    }
+
+    return results.stream().map(this::toResponse).collect(Collectors.toList());
+}
 
     // ── UPDATE (full) ─────────────────────────────────────────────────────────────
 

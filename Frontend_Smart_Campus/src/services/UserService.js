@@ -1,5 +1,5 @@
 // src/services/UserService.js
-import api from './ApiService';
+import api, { toApiUrl } from './ApiService';
 
 const UserService = {
   /** Standard email/password login → POST /api/auth/login */
@@ -18,12 +18,12 @@ const UserService = {
 
   /** Redirect to Google OAuth2 (Spring Security handles the flow) */
   loginWithGoogle: () => {
-    window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/oauth2/authorization/google`;
+    window.location.href = toApiUrl('/oauth2/authorization/google');
   },
 
   /** Redirect to Facebook OAuth2 */
   loginWithFacebook: () => {
-    window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/oauth2/authorization/facebook`;
+    window.location.href = toApiUrl('/oauth2/authorization/facebook');
   },
 
   /** Admin: get all users → GET /api/users */

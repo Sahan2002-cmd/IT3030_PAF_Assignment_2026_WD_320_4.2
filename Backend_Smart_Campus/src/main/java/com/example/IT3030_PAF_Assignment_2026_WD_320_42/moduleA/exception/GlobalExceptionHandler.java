@@ -41,9 +41,9 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Validation failed: " + errors));
     }
  
-    // ── 400 Illegal argument ──────────────────────────────────────────────────────
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
+    // ── 400 Illegal argument or Type mismatch ────────────────────────────────────
+    @ExceptionHandler({IllegalArgumentException.class, org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(Exception ex) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(ex.getMessage()));

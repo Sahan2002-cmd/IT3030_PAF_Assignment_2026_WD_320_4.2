@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../store/AuthContext';
+import { toApiUrl } from '../../services/ApiService';
 import Button from '../shared/Button';
 import Input from '../shared/Input';
 import './LoginPage.css';
@@ -122,7 +123,7 @@ export default function LoginPage() {
             <button
               className="login-oauth-btn"
               onClick={() => {
-                window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/oauth2/authorization/google`;
+                window.location.href = toApiUrl('/oauth2/authorization/google');
               }}
               type="button"
             >

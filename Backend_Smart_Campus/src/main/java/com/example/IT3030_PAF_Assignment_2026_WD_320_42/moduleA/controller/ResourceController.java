@@ -98,9 +98,7 @@ public class ResourceController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteResource(@PathVariable Long id) {
         resourceService.deleteResource(id);
-        return ResponseEntity
-                .status(HttpStatus.NO_CONTENT)
-                .body(ApiResponse.success("Resource deleted successfully"));
+        return ResponseEntity.ok(ApiResponse.success("Resource deleted successfully"));
     }
 
     // ── Inner DTO for PATCH /status body ─────────────────────────────────────────

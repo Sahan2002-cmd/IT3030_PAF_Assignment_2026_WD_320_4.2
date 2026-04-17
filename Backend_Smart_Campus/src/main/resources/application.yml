@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: IT3030_PAF_Assignment_2026_WD_320_4.2
+
+  # DataSource is configured programmatically in DataSourceConfig.java.
+  # It connects to SQL Server LocalDB (MSSQLLocalDB) → smart_campus database
+  # using jTDS pure-Java named pipe with SQL auth (no native DLL required).
+  # Falls back to an embedded H2 file database only if LocalDB is unavailable.
+
+  # ==================== JPA ====================
+  jpa:
+    hibernate:
+      # "update" → Hibernate creates/alters the `resources` table automatically.
+      # Use "validate" for production once the schema is stable.
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        # Ensures jTDS date/time types map correctly to SQL Server columns.
+        jdbc:
+          time_zone: UTC
+
+# ==================== Logging ====================
+logging:
+  level:
+    "[org.hibernate.SQL]": DEBUG
+    "[org.hibernate.type.descriptor.sql.BasicBinder]": TRACE
+    "[com.example]": INFO

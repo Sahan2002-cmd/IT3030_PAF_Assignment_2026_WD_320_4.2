@@ -1,11 +1,19 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const configuredApiUrl = (import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '');
+
+export const toApiUrl = (path = '') => {
+  const normalizedPath = path
+    ? (path.startsWith('/') ? path : `/${path}`)
+    : '';
+
+  return configuredApiUrl ? `${configuredApiUrl}${normalizedPath}` : normalizedPath || '/';
+};
 
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: configuredApiUrl || '',
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: true,
+  // withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
