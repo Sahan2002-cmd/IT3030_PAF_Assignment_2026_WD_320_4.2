@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { requestPasswordResetOtp, resetPasswordWithOtp } from "../../services/api";
 import { isValidPassword, PASSWORD_RULE_TEXT } from "../../utils/validation";
-
+ 
 const inputClasses =
   "w-full rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-3 text-base text-primary outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10";
-
+ 
 const initialForm = {
   email: "",
   otp: "",
   newPassword: "",
   confirmNewPassword: "",
 };
-
+ 
 function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
   const [formData, setFormData] = useState(initialForm);
   const [step, setStep] = useState("request");
@@ -19,12 +19,12 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
   const [message, setMessage] = useState("");
   const [isRequesting, setIsRequesting] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-
+ 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
-
+ 
     setFormData({
       ...initialForm,
       email: defaultEmail || "",
@@ -35,11 +35,11 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
     setIsRequesting(false);
     setIsResetting(false);
   }, [defaultEmail, isOpen]);
-
+ 
   if (!isOpen) {
     return null;
   }
-
+ 
   function handleChange(event) {
     const { name, value } = event.target;
     setFormData((current) => ({
@@ -47,13 +47,13 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
       [name]: value,
     }));
   }
-
+ 
   async function handleRequestOtp(event) {
     event.preventDefault();
     setError("");
     setMessage("");
     setIsRequesting(true);
-
+ 
     try {
       const response = await requestPasswordResetOtp({
         email: formData.email.trim().toLowerCase(),
@@ -66,29 +66,29 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
       setIsRequesting(false);
     }
   }
-
+ 
   async function handleResetPassword(event) {
     event.preventDefault();
     setError("");
     setMessage("");
-
+ 
     if (!/^\d{6}$/.test(formData.otp.trim())) {
       setError("OTP must be exactly 6 digits.");
       return;
     }
-
+ 
     if (!isValidPassword(formData.newPassword)) {
       setError(PASSWORD_RULE_TEXT);
       return;
     }
-
+ 
     if (formData.newPassword !== formData.confirmNewPassword) {
       setError("New passwords do not match.");
       return;
     }
-
+ 
     setIsResetting(true);
-
+ 
     try {
       const response = await resetPasswordWithOtp({
         email: formData.email.trim().toLowerCase(),
@@ -96,7 +96,7 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
         newPassword: formData.newPassword,
         confirmNewPassword: formData.confirmNewPassword,
       });
-
+ 
       onSuccess(response.message || "Password reset successful. You can log in now.");
       onClose();
     } catch (resetError) {
@@ -105,11 +105,12 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
       setIsResetting(false);
     }
   }
-
+ 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-sky-950/20 px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-sky-950/20 px-4 py-6 backdrop-blur-sm">
+      <div className="flex min-h-full items-start justify-center sm:items-center">
       <section
-        className="w-full max-w-lg rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_30px_90px_rgba(37,99,235,0.16)] sm:p-8"
+        className="my-auto w-full max-w-lg max-h-[calc(100vh-3rem)] overflow-y-auto rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_30px_90px_rgba(37,99,235,0.16)] sm:p-8"
         role="dialog"
         aria-modal="true"
         aria-labelledby="forgot-password-title"
@@ -123,7 +124,7 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
             ? "Enter your email to receive a one-time password."
             : "Enter the OTP from your email and set a new password."}
         </p>
-
+ 
         <form className="mt-6 grid gap-5" onSubmit={step === "request" ? handleRequestOtp : handleResetPassword}>
           <label className="grid gap-2">
             <span className="text-sm font-semibold text-primary">Email</span>
@@ -137,7 +138,7 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
               required
             />
           </label>
-
+ 
           {step === "reset" ? (
             <>
               <label className="grid gap-2">
@@ -154,7 +155,7 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
                   required
                 />
               </label>
-
+ 
               <label className="grid gap-2">
                 <span className="text-sm font-semibold text-primary">New password</span>
                 <input
@@ -170,7 +171,7 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
                 />
                 <span className="text-xs text-slate-500">{PASSWORD_RULE_TEXT}</span>
               </label>
-
+ 
               <label className="grid gap-2">
                 <span className="text-sm font-semibold text-primary">Confirm new password</span>
                 <input
@@ -187,14 +188,14 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
               </label>
             </>
           ) : null}
-
+ 
           {error ? (
             <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
           ) : null}
           {message ? (
             <p className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-700">{message}</p>
           ) : null}
-
+ 
           <div className="mt-2 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
             <button
               type="button"
@@ -203,7 +204,7 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
             >
               Cancel
             </button>
-
+ 
             <div className="flex flex-col gap-3 sm:flex-row">
               {step === "reset" ? (
                 <button
@@ -215,7 +216,7 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
                   {isRequesting ? "Sending..." : "Resend OTP"}
                 </button>
               ) : null}
-
+ 
               <button
                 type="submit"
                 className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-wait disabled:opacity-70"
@@ -233,8 +234,11 @@ function ForgotPasswordModal({ isOpen, defaultEmail, onClose, onSuccess }) {
           </div>
         </form>
       </section>
+      </div>
     </div>
   );
 }
-
+ 
 export default ForgotPasswordModal;
+ 
+ 
