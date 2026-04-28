@@ -1,3 +1,5 @@
+rootProject.name = 'Backend_Smart_Campus'
+
 plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.0'
